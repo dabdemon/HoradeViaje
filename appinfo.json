@@ -1,0 +1,64 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        "configurable"
+    ],
+    "companyName": "dabdemon",
+    "longName": "TripTime",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/landing.png",
+                "name": "Landing",
+                "type": "png"
+            },
+            {
+                "file": "images/takeoff.png",
+                "name": "TakeOff",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_PARTLY_CLOUDY_DAY.png",
+                "name": "Partial_cloudy_day",
+                "type": "png-trans"
+            },
+            {
+                "file": "images/clear-day_small.png",
+                "name": "clear_day",
+                "type": "png-trans"
+            },
+            {
+                "characterRegex": "[AMP24H]",
+                "file": "fonts/helvetica-neue-regular-1361522098.ttf",
+                "name": "HELVETICA_8",
+                "type": "font"
+            },
+            {
+                "characterRegex": "[0-9]",
+                "file": "fonts/helvetica-neue-regular-1361522098.ttf",
+                "name": "HELVETICA_40",
+                "trackingAdjust": -3,
+                "type": "font"
+            },
+            {
+                "characterRegex": "[0-9:]",
+                "file": "fonts/helvetica-neue-regular-1361522098.ttf",
+                "name": "HELVETICA_25",
+                "type": "font"
+            },
+            {
+                "file": "fonts/helvetica-neue-regular-1361522098.ttf",
+                "name": "HELVETICA_10",
+                "type": "font"
+            }
+        ]
+    },
+    "shortName": "TripTime",
+    "uuid": "588cbd29-7273-410f-9741-7e2073d4dba4",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": true
+    }
+}
