@@ -1,6 +1,16 @@
 #include "main.h"
 #include <pebble.h>
 
+//Pebble KEYS
+enum TripTimeKeys {
+	LOCAL_NAME_KEY = 0x0,       // TUPLE_CSTRING
+	LOCAL_TZ_KEY = 0x1, 		// TUPLE_INT
+	LOCAL_TZNAME_KEY = 0x2,     // TUPLE_CSTRING
+	DUAL_NAME_KEY = 0x3,  		// TUPLE_CSTRING
+	DUAL_TZ_KEY = 0x4, 			// TUPLE_INT
+	DUAL_TZNAME_KEY = 0x5,  	// TUPLE_CSTRING
+};
+	
 //Variables
 	static char localtime_text[] = "00:00";
 	static char localweekday_text[] = "XXXXXXXXXXXX";
@@ -9,6 +19,20 @@
 	static char dualtime_text[] = "00:00";
 	static char dualweekday_text[] = "XXXXXXXXXXXX";
 	static char dualmonth_text[] = "XXXXXXXXXXXXX";
+
+	int localtz=0;
+	int dualtz=0;
+	int timediff=0; //dualtz-localtz
+
+	char localname[] = "XXXXXXXXXXXXXXX";
+	char dualname[] = "XXXXXXXXXXXXXXX";
+
+	char LocalTZName[]  = "     ";
+	char DualTZName[]  = "     ";
+
+	// Setup messaging
+	const int inbound_size = 512;
+	const int outbound_size = 512;
 	
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
@@ -57,20 +81,20 @@ static void initialise_ui(void) {
   // LocalTZ
   LocalTZ = text_layer_create(GRect(28, 20, 41, 14));
   text_layer_set_background_color(LocalTZ, GColorClear);
-  text_layer_set_text(LocalTZ, "GMT+1");
+  text_layer_set_text(LocalTZ, LocalTZName);
   text_layer_set_font(LocalTZ, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalTZ);
   
   // LocalTemp
-  LocalTemp = text_layer_create(GRect(75, 15, 69, 42));
+  LocalTemp = text_layer_create(GRect(93, 15, 45, 42));
   text_layer_set_background_color(LocalTemp, GColorClear);
   text_layer_set_text(LocalTemp, "27");
-  text_layer_set_text_alignment(LocalTemp, GTextAlignmentCenter);
+  text_layer_set_text_alignment(LocalTemp, GTextAlignmentRight);
   text_layer_set_font(LocalTemp, s_res_bitham_42_light);
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalTemp);
   
   // LocalTime
-  LocalTime = text_layer_create(GRect(3, 49, 83, 30));
+  LocalTime = text_layer_create(GRect(3, 49, 93, 42));
   text_layer_set_background_color(LocalTime, GColorClear);
   text_layer_set_text(LocalTime, localtime_text);
   text_layer_set_text_alignment(LocalTime, GTextAlignmentRight);
@@ -92,7 +116,7 @@ static void initialise_ui(void) {
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalDay);
   
   // DualTime
-  DualTime = text_layer_create(GRect(3, 130, 83, 42));
+  DualTime = text_layer_create(GRect(3, 130, 93, 42));
   text_layer_set_background_color(DualTime, GColorClear);
   text_layer_set_text(DualTime, dualtime_text);
   text_layer_set_text_alignment(DualTime, GTextAlignmentRight);
@@ -113,17 +137,17 @@ static void initialise_ui(void) {
   text_layer_set_font(DualDay, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualDay);
   
-  // DualTemp
-  DualTemp = text_layer_create(GRect(75, 101, 69, 42));
+  // DualTemp 
+  DualTemp = text_layer_create(GRect(93, 97, 45, 42));
   text_layer_set_background_color(DualTemp, GColorClear);
   text_layer_set_text(DualTemp, "16");
-  text_layer_set_text_alignment(DualTemp, GTextAlignmentCenter);
+  text_layer_set_text_alignment(DualTemp, GTextAlignmentRight);
   text_layer_set_font(DualTemp, s_res_bitham_42_light);
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualTemp);
   
   // DualTZ
   DualTZ = text_layer_create(GRect(28, 102, 41, 14));
-  text_layer_set_text(DualTZ, "GMT-7");
+  text_layer_set_text(DualTZ, DualTZName);
   text_layer_set_font(DualTZ, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualTZ);
   
@@ -140,13 +164,13 @@ static void initialise_ui(void) {
   // s_textlayer_1
   s_textlayer_1 = text_layer_create(GRect(28, 8, 111, 17));
   text_layer_set_background_color(s_textlayer_1, GColorClear);
-  text_layer_set_text(s_textlayer_1, "MADRID");
+  text_layer_set_text(s_textlayer_1, localname);
   layer_add_child(window_get_root_layer(s_window), (Layer *)s_textlayer_1);
   
   // s_textlayer_2
   s_textlayer_2 = text_layer_create(GRect(28, 91, 100, 17));
   text_layer_set_background_color(s_textlayer_2, GColorClear);
-  text_layer_set_text(s_textlayer_2, "SAN FRANCISCO");
+  text_layer_set_text(s_textlayer_2, dualname);
   layer_add_child(window_get_root_layer(s_window), (Layer *)s_textlayer_2);
 }
 
@@ -193,10 +217,19 @@ void getDualTime(){
 	
 	time_t actualPtr = time(NULL);
 
+	
+			//Read persistent storage to calculate the time difference
+	
+			if (persist_exists(LOCAL_TZ_KEY)){localtz = persist_read_int(LOCAL_TZ_KEY);} 
+			if (persist_exists(DUAL_TZ_KEY)){dualtz = persist_read_int(DUAL_TZ_KEY);}
+			
+		
+			timediff= dualtz - localtz;
+	
 			//Define and Calculate Time Zones
 			//TIME ZONE 1
 				struct tm *tz1Ptr = gmtime(&actualPtr);
-				tz1Ptr->tm_hour += -8; //change this hard code
+				tz1Ptr->tm_hour += timediff; //change this hard code
 				tz1Ptr->tm_min += 0; //change this hard code
 		
 				//try to fix the timezone when half and hour diff
@@ -301,14 +334,138 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed)
 	
 } //HANDLE_TICK
 
+//*****************//
+// AppSync options //
+//*****************//
+
+/* simple base 10 only itoa */
+char *
+itoa10 (int value, char *result)
+{
+    char const digit[] = "0123456789";
+    char *p = result;
+    if (value < 0) {
+        *p++ = '-';
+        value *= -1;
+    }
+
+    /* move number of required chars and null terminate */
+    int shift = value;
+    do {
+        ++p;
+        shift /= 10;
+    } while (shift);
+    *p = '\0';
+
+    /* populate result in reverse order */
+    do {
+        *--p = digit [value % 10];
+        value /= 10;
+    } while (value);
+
+    return result;
+}
+
+  static AppSync sync;
+  static uint8_t sync_buffer[512];
+
+  static void sync_tuple_changed_callback(const uint32_t key,
+                                        const Tuple* new_tuple,
+                                        const Tuple* old_tuple,
+                                        void* context) {
+
+        
+  // App Sync keeps new_tuple in sync_buffer, so we may use it directly
+  switch (key) {
+	  case LOCAL_NAME_KEY:
+	  		persist_write_string(LOCAL_NAME_KEY, new_tuple->value->cstring);
+	  		APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
+      		break;
+	  case LOCAL_TZ_KEY:
+	      	persist_write_int(LOCAL_TZ_KEY, new_tuple->value->uint16);
+	  
+	  		//debug
+	  		static char strdebug[15];
+	  		itoa10(new_tuple->value->uint32, strdebug);
+	  		APP_LOG(APP_LOG_LEVEL_DEBUG, strdebug);
+	  		//debug - END
+	  
+      		break;
+	  case LOCAL_TZNAME_KEY:
+	  		persist_write_string(LOCAL_TZNAME_KEY, new_tuple->value->cstring);
+	  		APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
+      		break;
+	  case DUAL_NAME_KEY:
+	  		persist_write_string(DUAL_NAME_KEY, new_tuple->value->cstring);
+	  		APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
+      		break;
+	  case DUAL_TZ_KEY:
+	      	persist_write_int(DUAL_TZ_KEY, new_tuple->value->uint32);
+		  	//debug
+	  		static char strdebug2[15];
+	  		itoa10(new_tuple->value->uint32, strdebug2);
+	  		APP_LOG(APP_LOG_LEVEL_DEBUG, strdebug2);
+	  		//debug - END
+      		break;
+	  case DUAL_TZNAME_KEY:
+	  		persist_write_string(DUAL_TZNAME_KEY, new_tuple->value->cstring);
+	  		APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
+      		break;
+
+  }
+	  
+	  //refresh the screen
+	  
+		if (persist_exists(LOCAL_NAME_KEY)){persist_read_string(LOCAL_NAME_KEY, localname, sizeof(localname));}
+	  	if (persist_exists(DUAL_NAME_KEY)){persist_read_string(DUAL_NAME_KEY, dualname, sizeof(dualname));}
+	  	if (persist_exists(LOCAL_TZNAME_KEY)){persist_read_string(LOCAL_TZNAME_KEY, LocalTZName, sizeof(LocalTZName));}
+	  	if (persist_exists(DUAL_TZNAME_KEY)){persist_read_string(DUAL_TZNAME_KEY, DualTZName, sizeof(DualTZName));}
+	  	
+	  
+}
+
+
+
+
 
 //*************//
 // ENTRY POINT //
 //*************//
+void SetupMessages(){
+
+	
+                app_message_open(inbound_size, outbound_size);
+        
+                Tuplet initial_values[] = {
+					MyTupletCString(LOCAL_NAME_KEY, localname),
+					TupletInteger(LOCAL_TZ_KEY, 0), 
+					MyTupletCString(LOCAL_TZNAME_KEY, ""),
+					MyTupletCString(DUAL_NAME_KEY, dualname),
+					TupletInteger(DUAL_TZ_KEY, 0),
+					MyTupletCString(DUAL_TZNAME_KEY, ""),
+					
+                }; //TUPLET INITIAL VALUES
+        
+                app_sync_init(&sync, sync_buffer, sizeof(sync_buffer), initial_values,
+                ARRAY_LENGTH(initial_values), sync_tuple_changed_callback,
+                NULL, NULL);
+}
+
+
 void handle_init(void)
 {
+	
+	//Read the persistent storage
+	if (persist_exists(LOCAL_NAME_KEY)){persist_read_string(LOCAL_NAME_KEY, localname, sizeof(localname));}
+	if (persist_exists(DUAL_NAME_KEY)){persist_read_string(DUAL_NAME_KEY, dualname, sizeof(dualname));}
+	if (persist_exists(LOCAL_TZNAME_KEY)){persist_read_string(LOCAL_TZNAME_KEY, LocalTZName, sizeof(LocalTZName));}
+	if (persist_exists(DUAL_TZNAME_KEY)){persist_read_string(DUAL_TZNAME_KEY, DualTZName, sizeof(DualTZName));}
+	
 	//Display the UI
 	show_main();
+	
+	//Init the AppSync with the js code
+	SetupMessages();
 	
 	//Setup the date & time
 	getDate();

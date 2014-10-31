@@ -1,5 +1,12 @@
 {
-    "appKeys": {},
+    "appKeys": {
+        "dualname": 3,
+        "dualtz": 4,
+        "dualtzname": 5,
+        "localname": 0,
+        "localtz": 1,
+        "localtzname": 2
+    },
     "capabilities": [
         "configurable"
     ],
@@ -27,30 +34,6 @@
                 "file": "images/clear-day_small.png",
                 "name": "clear_day",
                 "type": "png-trans"
-            },
-            {
-                "characterRegex": "[AMP24H]",
-                "file": "fonts/helvetica-neue-regular-1361522098.ttf",
-                "name": "HELVETICA_8",
-                "type": "font"
-            },
-            {
-                "characterRegex": "[0-9]",
-                "file": "fonts/helvetica-neue-regular-1361522098.ttf",
-                "name": "HELVETICA_40",
-                "trackingAdjust": -3,
-                "type": "font"
-            },
-            {
-                "characterRegex": "[0-9:]",
-                "file": "fonts/helvetica-neue-regular-1361522098.ttf",
-                "name": "HELVETICA_25",
-                "type": "font"
-            },
-            {
-                "file": "fonts/helvetica-neue-regular-1361522098.ttf",
-                "name": "HELVETICA_10",
-                "type": "font"
             }
         ]
     },
