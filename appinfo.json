@@ -1,14 +1,18 @@
 {
     "appKeys": {
+        "dualicon": 9,
         "dualname": 3,
+        "dualtemp": 8,
         "dualtz": 4,
         "dualtzname": 5,
+        "localicon": 7,
         "localname": 0,
+        "localtemp": 6,
         "localtz": 1,
         "localtzname": 2
     },
     "capabilities": [
-        "configurable"
+        ""
     ],
     "companyName": "dabdemon",
     "longName": "TripTime",

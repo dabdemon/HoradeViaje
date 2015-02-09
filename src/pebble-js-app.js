@@ -1,7 +1,7 @@
 //////////////////////////////////
 //DEFINE AND INITALIZE VARIABLES//
 //////////////////////////////////
-var apikey = "AIzaSyBjakdvAf_X_MnC6UnurVsdadfasdlV-muBtD4b_I8";
+var apikey = "AIzaSyBjakdvAf_X_MnC6UnurVlV-muBtD4b_I8";
 var localtimezone;
 var localtzname;
 var dualtimezone;
@@ -93,45 +93,19 @@ if (options === null) options = {	"local" : "Madrid", //default to "Madrid"
 //Retrieve timezones//
 //////////////////////
 
-function getLocalTimeZone(position, timestamp, localname){
 
-	var url = "https://maps.googleapis.com/maps/api/timezone/json?location="+position+"&timestamp="+timestamp+"&key=" + apikey;
-	console.log("getLocalTimeZone URL: " + url);
-	var response;
-	var req = new XMLHttpRequest();
-	req.open('GET', url, true);
-	req.send();
-	req.onload = function(e) {
-		if (req.readyState == 4) {
-			if (req.status == 200) {
-				response = JSON.parse(req.responseText);
-				if (response) {
-					var dstOffset = response.dstOffset;
-					var rawOffset = response.rawOffset;
-					console.log("local dstOffset = " + dstOffset);
-					console.log("local rawOffset = " + rawOffset);
-					localtimezone = (dstOffset + rawOffset)/3600; //check the daylight saving time
-					console.log("localtimezone = " + localtimezone);
-					localtzname = response.timeZoneName;
-					console.log("localtzname = " + localtzname);
-					
-					getDualPosition("mountain view", timestamp, localname, localtimezone, localtzname); 
-		
-					//send the values to the Pebble!!
-				//	Pebble.sendAppMessage({
-				//		"localname" : localname,
-				//		"localtz" : localtimezone,
-				//		"localtzname" : localtzname,
-				//	});
-	
-					}
-				}
-			}
-		};
-}
 
 function ShortTimeZone(TZ)
 {
+	
+	//Correct Google's names for get the right abbreviation
+	if (TZ=="Central European Standard Time"){TZ="Central European Time";}
+	else if (TZ=="Western European Standard Time"){TZ="Western European Time";}
+	else if (TZ=="Eastern European Standard Time"){TZ="Eastern European Time";}	
+	else if (TZ=="Moscow Standard Time"){TZ="Moscow Standard Kime";} //This is to trick the code and get MSK
+	else if (TZ=="Moscow Summer Time"){TZ="Moscow Summer Dime";} //This is to trick the code and get MSD (Not longer user but... who knows?)
+	
+	
 	//Format the Timezones before sending to Pebble
 	var temp = TZ.substr(0,1);
 
@@ -146,15 +120,63 @@ function ShortTimeZone(TZ)
 	
 }
 
-function getDualTimeZone(position, timestamp, dualzone, localzone, localtz, localtzname){
+
+
+function getTimeStamp(){
+	//The following returns the number of seconds since the epoch.
+	new Date().getTime();
+	var timestamp = Date.now()/1000;
+	console.log("timestamp: " + timestamp);
+	
+	return timestamp;
+	
+}
+
+
+//Try to optimizd the code//
+
+function getPosition(cityname){
+	
+
+	var url = "http://maps.googleapis.com/maps/api/geocode/json?address=[" + cityname.replace(" ","%20") + "]";
+	console.log("get positon URL: " + url);
+	var response;
+	var req = new XMLHttpRequest();
+	req.open('GET', url, false);
+	req.send();
+
+		if (req.readyState == 4) {
+			if (req.status == 200) {
+				response = JSON.parse(req.responseText);
+				if (response) {
+					//var position = new Array({'lat' : response.results[0].geometry.location.lat,
+					//						'long' : response.results[0].geometry.location.lng});
+
+					var position = new Array(2);
+					position[0] = response.results[0].geometry.location.lat;
+					position[1] = response.results[0].geometry.location.lng;
+					position[2] = response.results[0].geometry.location.lat + ',' + response.results[0].geometry.location.lng;
+					//console.log("ya he rellenado el array y voy a leerlo");
+					console.log("latitude: " + position[0]);
+					console.log("longitude: " + position[1]);
+					console.log("position: " + position[2]);
+					return position;
+					}
+				}
+			}
+
+}
+
+function getTimeZone(position, timestamp){
 
 	var url = "https://maps.googleapis.com/maps/api/timezone/json?location="+position+"&timestamp="+timestamp+"&key=" + apikey;
 	console.log("getDualTimeZone URL: " + url);
 	var response;
 	var req = new XMLHttpRequest();
-	req.open('GET', url, true);
+	
+	req.open('GET', url, false);
 	req.send();
-	req.onload = function(e) {
+	
 		if (req.readyState == 4) {
 			if (req.status == 200) {
 				response = JSON.parse(req.responseText);
@@ -163,102 +185,183 @@ function getDualTimeZone(position, timestamp, dualzone, localzone, localtz, loca
 					var rawOffset = response.rawOffset;
 					console.log("dual dstOffset = " + dstOffset);
 					console.log("dual rawOffset = " + rawOffset);
-					dualtimezone = (dstOffset + rawOffset)/3600; //check the daylight saving time
-					console.log("dualtimezone = " + dualtimezone);
-					dualtzname = response.timeZoneName;
-					console.log("dualtzname = " + dualtzname);
-					console.log("localtz = " + localtz);
+					var tz = (dstOffset + rawOffset)/3600; //check the daylight saving time
+
+					var tzname = response.timeZoneName;
+					tzname = ShortTimeZone(tzname);
 					
-					dualtzname = ShortTimeZone(dualtzname);
-					localtzname = ShortTimeZone(localtzname);
-					
-					console.log("local timezone: " + localtzname);
-					console.log("dual timezone: " + dualtzname);
-					
-					
-					//send the values to the Pebble!!
-					Pebble.sendAppMessage({
-						"dualname" : dualzone.toUpperCase(),
-						"dualtz" : parseInt(dualtimezone),
-						"dualtzname" : dualtzname,
-						"localname" : localzone.toUpperCase(),
-						"localtz" : parseInt(localtz),
-						"localtzname" : localtzname,
-					});
+					var timezone = new Array(2);
+					timezone[0] = tz;
+					timezone[1] = tzname;
 			
+					return timezone;
 				
 					}
 				}
 			}
-		};
 }
 
-
-function getLocalPosition(localname, timestamp){
-
-	var url = "http://maps.googleapis.com/maps/api/geocode/json?address=[" + localname.replace(" ","%20") + "]";
-	console.log("LocalPosition URL: " + url);
-	var response;
-	var req = new XMLHttpRequest();
-	req.open('GET', url, true);
-	req.send();
-	req.onload = function(e) {
-		if (req.readyState == 4) {
-			if (req.status == 200) {
-				response = JSON.parse(req.responseText);
-				if (response) {
-					var position = response.results[0].geometry.location.lat +","+ response.results[0].geometry.location.lng;
-					console.log("localpos: " + position);
-					
-					getLocalTimeZone(position, timestamp, localname);
-					}
-				}
-			}
-		};
-}
-
-function getDualPosition(dualname, timestamp,  localzone, localtz, localtzname){
-
-	var url = "http://maps.googleapis.com/maps/api/geocode/json?address=[" + dualname.replace(" ","%20") + "]";
-	console.log("DualPosition URL: " + url);
-	var response;
-	var req = new XMLHttpRequest();
-	req.open('GET', url, true);
-	req.send();
-	req.onload = function(e) {
-		if (req.readyState == 4) {
-			if (req.status == 200) {
-				response = JSON.parse(req.responseText);
-				if (response) {
-					var position = response.results[0].geometry.location.lat +","+ response.results[0].geometry.location.lng;
-					console.log("dualpos: " + position);
-					
-					getDualTimeZone(position, timestamp, dualname, localzone, localtz, localtzname);
-					}
-				}
-			}
-		};
-}
-
-function getTimeZones(){
-	//The following returns the number of seconds since the epoch.
-	new Date().getTime();
-	var timestamp = Date.now()/1000;
-	console.log("timestamp: " + timestamp);
+function Send2Pebble(Action,dualname, dualtz,dualtzname,localname,localtz,localtzname, localtemp, dualtemp){
 	
-	getLocalPosition("navalcarnero", timestamp);
-	//getDualPosition("mountain view", timestamp);
-
+	if (Action == 1) { //Initialize
+	//send the values to the Pebble!!
+		Pebble.sendAppMessage({
+							"dualname" : dualname.toUpperCase(),
+							"dualtz" : parseInt(dualtz),
+							"dualtzname" : dualtzname,
+							"localname" : localname.toUpperCase(),
+							"localtz" : parseInt(localtz),
+							"localtzname" : localtzname,
+							"localtemp" : localtemp,
+							"dualtemp" : dualtemp,
+		});
+	}
+	else if (Action == 2) { //Refresh Weather data
+		Pebble.sendAppMessage({
+							"localtemp" : localtemp,
+							"dualtemp" : dualtemp,
+		});
+		
+	}
 	
 }
 
 
 function initialize(){
-	//get the timezones
-	getTimeZones();
-	//get the weather
+	var timestamp = getTimeStamp();
+	//Get Local Position
+	var localpos = getPosition("Navalcarnero");
+	//Get Dual Position
+	var dualpos = getPosition("Mountain View");
+	//Get Local Timezone
+	var localtz = getTimeZone(localpos[2],timestamp);
+	//Get Dual Timezone
+	var dualtz = getTimeZone(dualpos[2],timestamp);
+	
+	//Get Weather for Local Zone
+	var localweather = getWeatherFromLatLong(localpos[0], localpos[1]);
+	
+	//Get Weather for Dual Zone
+	var dualweather = getWeatherFromLatLong(dualpos[0], dualpos[1]);
+	
+	//Send messages to Pebble
+	console.log("Local Name: " + "Navalcarnero");
+	console.log("Local TZ: " + localtz[0]);
+	console.log("Local TZ Name: " + localtz[1]);
+	console.log("Dual Name: " + "Mountain View");
+	console.log("Dual TZ: " + dualtz[0]);
+	console.log("Dual TZ Name: " + dualtz[1]);
+	console.log("Local Temp: " + localweather[0]);
+	console.log("Local Icon: " + localweather[1]);
+	console.log("Local Temp: " + dualweather[0]);
+	console.log("Local Icon: " + dualweather[1]);
+	
+	Send2Pebble(1,"Mountain View", dualtz[0], dualtz[1], "Navalcarnero", localtz[0], localtz[1], localweather[0], dualweather[0]);
+	
 
 
+}
+
+/////////////////////////
+//Retreive Weather data//
+/////////////////////////
+
+//Get the WOEID & City name from Flickr when the GPS is ON
+// accuracy =  World level is 1, Country is ~3, Region ~6, City ~11, Street ~16 
+function getWeatherFromLatLong(latitude, longitude) {
+  var response;
+  var woeid = -1;
+  var query = encodeURI("select woeid, county, city, street from geo.placefinder where text=\"" + latitude + "," + longitude +"\" and gflags=\"R\"");
+	console.log("geo query: " + query);
+  var url = "http://query.yahooapis.com/v1/public/yql?q=" + query + "&format=json";
+  var req = new XMLHttpRequest();
+	var temp;
+	
+  req.open('GET', url, false);
+  req.send();
+    if (req.readyState == 4) {
+      if (req.status == 200) {
+        console.log(req.responseText);
+        response = JSON.parse(req.responseText);
+        if (response) {
+			woeid = response.query.results.Result.woeid;
+			
+			
+			temp = getWeatherFromWoeid(woeid);
+			return temp;
+        }
+      } else {
+        console.log("unable to get woeid from Yahoo! API");
+		  return "999";
+		
+      }
+    }
+
+}
+
+//Retrieves the Weather data from Yahoo! Weather//
+function getWeatherFromWoeid(woeid) {
+	
+	/*if Hong Kong then override the woeid with a valid one*/
+	if (woeid ==24865698){woeid=12467924;}
+	var celsius = 'celsius';
+	
+	
+	//get today's conditions	
+	var query = encodeURI("select  item.condition, item.forecast, astronomy, wind, atmosphere from weather.forecast where woeid = " + woeid +
+                        " and u = " + (celsius ? "\"c\"" : "\"f\"") + " |truncate(count=4)");
+	
+  var url = "http://query.yahooapis.com/v1/public/yql?q=" + query + "&format=json";
+
+  var response;
+	var temperature;
+	var icon;
+  var req = new XMLHttpRequest();
+  console.log(url);
+  req.open('GET', url, false);
+  req.send();
+	
+    if (req.readyState == 4) {
+      if (req.status == 200) {
+        response = JSON.parse(req.responseText);
+        if (response) {
+			var channel = response.query.results.channel;
+
+			temperature = channel[0].item.condition.temp + "\u00B0";
+			//if current conditions are not retrieved, get the forecasted for the day icon
+			if (channel[0].item.condition.code == 3200){icon = imageId[channel[0].item.forecast.code];}
+			else {icon = imageId[channel[0].item.condition.code];}
+
+	
+			var weather = new Array(2);
+			weather[0] = temperature;
+			weather[1] = icon;
+			
+			return weather;
+        }
+      } else {
+        console.log("Error WFW");
+		  return "999";
+      }
+    }
+
+}
+
+function updateWeather(){
+	
+	//Get Local Position
+	var localpos = getPosition("Navalcarnero");
+	//Get Dual Position
+	var dualpos = getPosition("Mountain View");
+	
+	//Get Weather for Local Zone
+	var localweather = getWeatherFromLatLong(localpos[0], localpos[1]);
+	
+	//Get Weather for Dual Zone
+	var dualweather = getWeatherFromLatLong(dualpos[0], dualpos[1]);
+	
+	Send2Pebble(2,"Mountain View", null, null, "Navalcarnero", null, null, localweather[0], dualweather[0]);
+	
 }
 
 
@@ -266,9 +369,16 @@ function initialize(){
 //Setup the connection with the watch//
 ///////////////////////////////////////
 
+//Receive the Pebble's call to refresh the weather info
+Pebble.addEventListener("appmessage",
+                        function(e) {
+                          updateWeather();
+                        });
+
 //Initiate the Appsync (This event is called just once)
 Pebble.addEventListener("ready", function(e) {
 	console.log("connect!" + e.ready);
 	initialize();
+	
 	
 });

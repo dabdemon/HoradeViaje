@@ -3,12 +3,16 @@
 
 //Pebble KEYS
 enum TripTimeKeys {
-	LOCAL_NAME_KEY = 0x0,       // TUPLE_CSTRING
-	LOCAL_TZ_KEY = 0x1, 		// TUPLE_INT
-	LOCAL_TZNAME_KEY = 0x2,     // TUPLE_CSTRING
-	DUAL_NAME_KEY = 0x3,  		// TUPLE_CSTRING
-	DUAL_TZ_KEY = 0x4, 			// TUPLE_INT
-	DUAL_TZNAME_KEY = 0x5,  	// TUPLE_CSTRING
+	LOCAL_NAME_KEY = 0,       // TUPLE_CSTRING
+	LOCAL_TZ_KEY = 1, 		// TUPLE_INT
+	LOCAL_TZNAME_KEY = 2,     // TUPLE_CSTRING
+	DUAL_NAME_KEY = 3,  		// TUPLE_CSTRING
+	DUAL_TZ_KEY = 4, 			// TUPLE_INT
+	DUAL_TZNAME_KEY = 5,  	// TUPLE_CSTRING
+	LOCAL_TEMP_KEY = 6,
+	LOCAL_ICON_KEY = 7,
+	DUAL_TEMP_KEY = 8,
+	DUAL_ICON_KEY = 9,
 };
 	
 //Variables
@@ -29,6 +33,12 @@ enum TripTimeKeys {
 
 	char LocalTZName[]  = "     ";
 	char DualTZName[]  = "     ";
+
+	char strLocalTemp[] = "    ";
+    char strDualTemp[] = "    ";
+
+	static AppTimer *timer;
+	uint32_t timeout_ms = 1800000; //30min (1min = 60000)
 
 	// Setup messaging
 	const int inbound_size = 512;
@@ -86,9 +96,9 @@ static void initialise_ui(void) {
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalTZ);
   
   // LocalTemp
-  LocalTemp = text_layer_create(GRect(93, 15, 45, 42));
+  LocalTemp = text_layer_create(GRect(73, 15, 65, 42));
   text_layer_set_background_color(LocalTemp, GColorClear);
-  text_layer_set_text(LocalTemp, "27");
+  text_layer_set_text(LocalTemp, strLocalTemp);
   text_layer_set_text_alignment(LocalTemp, GTextAlignmentRight);
   text_layer_set_font(LocalTemp, s_res_bitham_42_light);
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalTemp);
@@ -138,9 +148,9 @@ static void initialise_ui(void) {
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualDay);
   
   // DualTemp 
-  DualTemp = text_layer_create(GRect(93, 97, 45, 42));
+  DualTemp = text_layer_create(GRect(73, 97, 65, 42)); //(93,97,45,42)
   text_layer_set_background_color(DualTemp, GColorClear);
-  text_layer_set_text(DualTemp, "16");
+  text_layer_set_text(DualTemp, strDualTemp);
   text_layer_set_text_alignment(DualTemp, GTextAlignmentRight);
   text_layer_set_font(DualTemp, s_res_bitham_42_light);
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualTemp);
@@ -267,7 +277,15 @@ void getDualTime(){
 				if (dualtime_text[0]=='0') {memcpy(&dualtime_text," ",1);}
 	
 			//Calculate the Dual Zone Date
-			strftime(dualmonth_text,sizeof(dualmonth_text),"%B %e",tz1Ptr);
+			char *sys_locale = setlocale(LC_ALL, "");
+
+			if (strcmp("en_US", sys_locale) == 0) {
+			  strftime(dualmonth_text,sizeof(dualmonth_text),"%B %e",tz1Ptr);
+			
+			} else {
+			  strftime(dualmonth_text,sizeof(dualmonth_text),"%e %B",tz1Ptr);
+			}
+			
 			strftime(dualweekday_text,sizeof(dualweekday_text),"%A",tz1Ptr);
 			
 	
@@ -288,7 +306,15 @@ void getDate()
 	struct tm *tz1Ptr = gmtime(&actualPtr);
 	
 	//get the local date
-	strftime(localmonth_text,sizeof(localmonth_text),"%B %e",tz1Ptr);
+	char *sys_locale = setlocale(LC_ALL, "");
+		
+	if (strcmp("en_US", sys_locale) == 0) {
+		strftime(localmonth_text,sizeof(localmonth_text),"%B %e",tz1Ptr);
+			
+	} else {
+		strftime(localmonth_text,sizeof(localmonth_text),"%e %B",tz1Ptr);
+	}
+	
 	strftime(localweekday_text,sizeof(localweekday_text),"%A",tz1Ptr);
 	
 	//set the layers
@@ -379,37 +405,46 @@ itoa10 (int value, char *result)
   switch (key) {
 	  case LOCAL_NAME_KEY:
 	  		persist_write_string(LOCAL_NAME_KEY, new_tuple->value->cstring);
-	  		APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
+	  		//APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
       		break;
 	  case LOCAL_TZ_KEY:
 	      	persist_write_int(LOCAL_TZ_KEY, new_tuple->value->uint16);
 	  
 	  		//debug
-	  		static char strdebug[15];
-	  		itoa10(new_tuple->value->uint32, strdebug);
-	  		APP_LOG(APP_LOG_LEVEL_DEBUG, strdebug);
+	  		//static char strdebug[15];
+	  		//itoa10(new_tuple->value->uint32, strdebug);
+	  		//APP_LOG(APP_LOG_LEVEL_DEBUG, strdebug);
 	  		//debug - END
 	  
       		break;
 	  case LOCAL_TZNAME_KEY:
 	  		persist_write_string(LOCAL_TZNAME_KEY, new_tuple->value->cstring);
-	  		APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
+	  		//APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
       		break;
 	  case DUAL_NAME_KEY:
 	  		persist_write_string(DUAL_NAME_KEY, new_tuple->value->cstring);
-	  		APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
+	  		//APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
       		break;
 	  case DUAL_TZ_KEY:
 	      	persist_write_int(DUAL_TZ_KEY, new_tuple->value->uint32);
 		  	//debug
-	  		static char strdebug2[15];
-	  		itoa10(new_tuple->value->uint32, strdebug2);
-	  		APP_LOG(APP_LOG_LEVEL_DEBUG, strdebug2);
+	  		//static char strdebug2[15];
+	  		//itoa10(new_tuple->value->uint32, strdebug2);
+	  		//APP_LOG(APP_LOG_LEVEL_DEBUG, strdebug2);
 	  		//debug - END
       		break;
 	  case DUAL_TZNAME_KEY:
 	  		persist_write_string(DUAL_TZNAME_KEY, new_tuple->value->cstring);
-	  		APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
+	  		//APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
+      		break;
+	  
+	  case LOCAL_TEMP_KEY:
+	  		persist_write_string(LOCAL_TEMP_KEY, new_tuple->value->cstring);
+	  		//APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
+      		break;
+	  case DUAL_TEMP_KEY:
+	  		persist_write_string(DUAL_TEMP_KEY, new_tuple->value->cstring);
+	  		//APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
       		break;
 
   }
@@ -420,11 +455,45 @@ itoa10 (int value, char *result)
 	  	if (persist_exists(DUAL_NAME_KEY)){persist_read_string(DUAL_NAME_KEY, dualname, sizeof(dualname));}
 	  	if (persist_exists(LOCAL_TZNAME_KEY)){persist_read_string(LOCAL_TZNAME_KEY, LocalTZName, sizeof(LocalTZName));}
 	  	if (persist_exists(DUAL_TZNAME_KEY)){persist_read_string(DUAL_TZNAME_KEY, DualTZName, sizeof(DualTZName));}
+	  	if (persist_exists(LOCAL_TEMP_KEY)){persist_read_string(LOCAL_TEMP_KEY, strLocalTemp, sizeof(strLocalTemp));}
+	  	if (persist_exists(DUAL_TEMP_KEY)){persist_read_string(DUAL_TEMP_KEY, strDualTemp, sizeof(strDualTemp));}
 	  	
 	  
 }
 
+//************************************************//
+// TIMER to refresh the weather data every 30 min //
+//************************************************//
+static void send_cmd(void) {
 
+         Tuplet value = MyTupletCString(8, "");
+        
+         DictionaryIterator *iter;
+         app_message_outbox_begin(&iter);
+        
+         if (iter == NULL) {
+                return;
+         }
+        
+         dict_write_tuplet(iter, &value);
+         dict_write_end(iter);
+        
+         app_message_outbox_send();
+	
+}
+
+static void timer_callback(void *context) {
+
+		//Developer vibe: confirm that timer is not killed
+		//vibes_double_pulse();
+	
+        timer = app_timer_register(timeout_ms, timer_callback, NULL);
+
+        //Refresh the weather
+        send_cmd();
+	       
+
+}
 
 
 
@@ -443,6 +512,8 @@ void SetupMessages(){
 					MyTupletCString(DUAL_NAME_KEY, dualname),
 					TupletInteger(DUAL_TZ_KEY, 0),
 					MyTupletCString(DUAL_TZNAME_KEY, ""),
+					MyTupletCString(LOCAL_TEMP_KEY, ""),
+					MyTupletCString(DUAL_TEMP_KEY, ""),
 					
                 }; //TUPLET INITIAL VALUES
         
@@ -455,11 +526,16 @@ void SetupMessages(){
 void handle_init(void)
 {
 	
+	//Use the internationalization API to detect the user's language
+	setlocale(LC_ALL, i18n_get_system_locale());
+	
 	//Read the persistent storage
 	if (persist_exists(LOCAL_NAME_KEY)){persist_read_string(LOCAL_NAME_KEY, localname, sizeof(localname));}
 	if (persist_exists(DUAL_NAME_KEY)){persist_read_string(DUAL_NAME_KEY, dualname, sizeof(dualname));}
 	if (persist_exists(LOCAL_TZNAME_KEY)){persist_read_string(LOCAL_TZNAME_KEY, LocalTZName, sizeof(LocalTZName));}
 	if (persist_exists(DUAL_TZNAME_KEY)){persist_read_string(DUAL_TZNAME_KEY, DualTZName, sizeof(DualTZName));}
+	if (persist_exists(LOCAL_TEMP_KEY)){persist_read_string(LOCAL_TEMP_KEY, strLocalTemp, sizeof(strLocalTemp));}
+	if (persist_exists(DUAL_TEMP_KEY)){persist_read_string(DUAL_TEMP_KEY, strDualTemp, sizeof(strDualTemp));}
 	
 	//Display the UI
 	show_main();
@@ -477,6 +553,9 @@ void handle_init(void)
 
 	handle_tick(current_time, MINUTE_UNIT);
 	tick_timer_service_subscribe(MINUTE_UNIT, &handle_tick);
+	
+	//setup the timer to refresh the weather info every 30min
+	timer = app_timer_register(timeout_ms, timer_callback, NULL);
 }
 
 void handle_deinit(void)
