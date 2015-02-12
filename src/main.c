@@ -9,11 +9,33 @@ enum TripTimeKeys {
 	DUAL_NAME_KEY = 3,  		// TUPLE_CSTRING
 	DUAL_TZ_KEY = 4, 			// TUPLE_INT
 	DUAL_TZNAME_KEY = 5,  	// TUPLE_CSTRING
-	LOCAL_TEMP_KEY = 6,
-	LOCAL_ICON_KEY = 7,
-	DUAL_TEMP_KEY = 8,
-	DUAL_ICON_KEY = 9,
+	LOCAL_TEMP_KEY = 6,     // TUPLE_CSTRING
+	LOCAL_ICON_KEY = 7,     // TUPLE_INT
+	DUAL_TEMP_KEY = 8,     // TUPLE_CSTRING
+	DUAL_ICON_KEY = 9,     // TUPLE_INT
 };
+
+//Bitmaps
+static const uint32_t WEATHER_ICONS[] = {
+  RESOURCE_ID_ICON_CLEAR_DAY,
+  RESOURCE_ID_ICON_CLEAR_NIGHT,
+  RESOURCE_ID_ICON_WIND,
+  RESOURCE_ID_ICON_COLD,
+  RESOURCE_ID_ICON_HOT,
+  RESOURCE_ID_ICON_PARTLY_CLOUDY_DAY,
+  RESOURCE_ID_ICON_PARTLY_CLOUDY_NIGHT,
+  RESOURCE_ID_ICON_FOG,
+  RESOURCE_ID_ICON_RAIN,
+  RESOURCE_ID_ICON_SNOW,
+  RESOURCE_ID_ICON_SLEET,
+  RESOURCE_ID_ICON_SNOW_SLEET,
+  RESOURCE_ID_ICON_RAIN_SLEET,
+  RESOURCE_ID_ICON_RAIN_SNOW,
+  RESOURCE_ID_ICON_CLOUDY,
+  RESOURCE_ID_ICON_THUNDER,
+  RESOURCE_ID_ICON_NA,
+  RESOURCE_ID_ICON_DRIZZLE,
+}; 
 	
 //Variables
 	static char localtime_text[] = "00:00";
@@ -37,6 +59,9 @@ enum TripTimeKeys {
 	char strLocalTemp[] = "    ";
     char strDualTemp[] = "    ";
 
+	char strLocalAMPMInd[]  = "  ";
+	char strDualAMPMInd[]  = "  ";
+
 	static AppTimer *timer;
 	uint32_t timeout_ms = 1800000; //30min (1min = 60000)
 
@@ -56,9 +81,11 @@ static TextLayer *DualArea;
 static TextLayer *LocalTZ;
 static TextLayer *LocalTemp;
 static TextLayer *LocalTime;
+static TextLayer *LocalAMPMInd;
 static TextLayer *LocalDate;
 static TextLayer *LocalDay;
 static TextLayer *DualTime;
+static TextLayer *DualAMPMInd;
 static TextLayer *DualDate;
 static TextLayer *DualDay;
 static TextLayer *DualTemp;
@@ -76,8 +103,7 @@ static void initialise_ui(void) {
   s_res_gothic_14 = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   s_res_bitham_42_light = fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT);
   s_res_bitham_30_black = fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK);
-  s_res_takeoff = gbitmap_create_with_resource(RESOURCE_ID_TakeOff);
-  s_res_landing = gbitmap_create_with_resource(RESOURCE_ID_Landing);
+    
   // LocalArea
   LocalArea = text_layer_create(GRect(3, 9, 137, 75));
   text_layer_set_font(LocalArea, s_res_gothic_14);
@@ -96,7 +122,7 @@ static void initialise_ui(void) {
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalTZ);
   
   // LocalTemp
-  LocalTemp = text_layer_create(GRect(73, 15, 65, 42));
+  LocalTemp = text_layer_create(GRect(73, 13, 65, 45)); //(GRect(73, 15, 65, 42));
   text_layer_set_background_color(LocalTemp, GColorClear);
   text_layer_set_text(LocalTemp, strLocalTemp);
   text_layer_set_text_alignment(LocalTemp, GTextAlignmentRight);
@@ -110,16 +136,24 @@ static void initialise_ui(void) {
   text_layer_set_text_alignment(LocalTime, GTextAlignmentRight);
   text_layer_set_font(LocalTime, s_res_bitham_30_black);
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalTime);
+	
+	
+  // LocalTime AM/PM Indicator
+  LocalAMPMInd = text_layer_create(GRect(100, 54, 20, 20));
+  text_layer_set_background_color(LocalAMPMInd, GColorClear);
+  text_layer_set_text(LocalAMPMInd, strLocalAMPMInd);
+  text_layer_set_text_alignment(LocalAMPMInd, GTextAlignmentLeft);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)LocalAMPMInd);
   
   // LocalDate
-  LocalDate = text_layer_create(GRect(11, 43, 98, 14));
+  LocalDate = text_layer_create(GRect(11, 40, 98, 16));
   text_layer_set_background_color(LocalDate, GColorClear);
   text_layer_set_text(LocalDate, localmonth_text);
   text_layer_set_font(LocalDate, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalDate);
   
   // LocalDay
-  LocalDay = text_layer_create(GRect(11, 32, 98, 14));
+  LocalDay = text_layer_create(GRect(11, 30, 98, 16));
   text_layer_set_background_color(LocalDay, GColorClear);
   text_layer_set_text(LocalDay, localweekday_text);
   text_layer_set_font(LocalDay, s_res_gothic_14);
@@ -132,23 +166,32 @@ static void initialise_ui(void) {
   text_layer_set_text_alignment(DualTime, GTextAlignmentRight);
   text_layer_set_font(DualTime, s_res_bitham_30_black);
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualTime);
+	
+  // DualTime AM/PM Indicator
+  DualAMPMInd = text_layer_create(GRect(100, 135, 20, 20));
+  text_layer_set_background_color(DualAMPMInd, GColorClear);
+  text_layer_set_text(DualAMPMInd, strDualAMPMInd);
+  text_layer_set_text_alignment(DualAMPMInd, GTextAlignmentLeft);
+  //text_layer_set_font(DualAMPMInd, s_res_gothic_14);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)DualAMPMInd);
+	
   
   // DualDate
-  DualDate = text_layer_create(GRect(11, 124, 98, 14));
+  DualDate = text_layer_create(GRect(11, 122, 98, 16));
   text_layer_set_background_color(DualDate, GColorClear);
   text_layer_set_text(DualDate, dualmonth_text);
   text_layer_set_font(DualDate, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualDate);
   
   // DualDay
-  DualDay = text_layer_create(GRect(11, 114, 98, 14));
+  DualDay = text_layer_create(GRect(11, 112, 98, 16));
   text_layer_set_background_color(DualDay, GColorClear);
   text_layer_set_text(DualDay, dualweekday_text);
   text_layer_set_font(DualDay, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualDay);
   
   // DualTemp 
-  DualTemp = text_layer_create(GRect(73, 97, 65, 42)); //(93,97,45,42)
+  DualTemp = text_layer_create(GRect(73, 95, 65, 45)); //(93,97,45,42) //GRect(73, 97, 65, 42))
   text_layer_set_background_color(DualTemp, GColorClear);
   text_layer_set_text(DualTemp, strDualTemp);
   text_layer_set_text_alignment(DualTemp, GTextAlignmentRight);
@@ -165,12 +208,12 @@ static void initialise_ui(void) {
   Local_img = bitmap_layer_create(GRect(4, 9, 20, 20));
   bitmap_layer_set_bitmap(Local_img, s_res_takeoff);
   layer_add_child(window_get_root_layer(s_window), (Layer *)Local_img);
-  
+	
   // Dual_img
   Dual_img = bitmap_layer_create(GRect(4, 94, 20, 20));
   bitmap_layer_set_bitmap(Dual_img, s_res_landing);
   layer_add_child(window_get_root_layer(s_window), (Layer *)Dual_img);
-  
+	
   // s_textlayer_1
   s_textlayer_1 = text_layer_create(GRect(28, 8, 111, 17));
   text_layer_set_background_color(s_textlayer_1, GColorClear);
@@ -293,6 +336,7 @@ void getDualTime(){
 			text_layer_set_text(DualTime, dualtime_text);
 			text_layer_set_text(DualDay,dualweekday_text);
 			text_layer_set_text(DualDate,dualmonth_text); 
+			if(!clock_is_24h_style()){strftime(strDualAMPMInd, sizeof(strDualAMPMInd), "%p", tz1Ptr);} 
 
 }
 
@@ -350,7 +394,19 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed)
        {
 
 		   //update the time
-			getTime();
+		   //if(!clock_is_24h_style()){strftime(strLocalAMPMInd, sizeof(strLocalAMPMInd), "%p", tick_time);} 
+		   
+		   if (clock_is_24h_style()){strftime(localtime_text, sizeof(localtime_text), "%H:%M", tick_time);}
+				else {strftime(localtime_text, sizeof(localtime_text), "%I:%M", tick_time);
+					 strftime(strLocalAMPMInd, sizeof(strLocalAMPMInd), "%p", tick_time);}
+	
+
+				//Remove the leading 0s
+				if (localtime_text[0]=='0') {memcpy(&localtime_text," ",1);}
+		   
+			//getTime();
+		//Set the Dual Time
+		getDualTime();
 
 
        } //MINUTE CHANGES
@@ -442,9 +498,20 @@ itoa10 (int value, char *result)
 	  		persist_write_string(LOCAL_TEMP_KEY, new_tuple->value->cstring);
 	  		//APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
       		break;
+	  case LOCAL_ICON_KEY:
+	  		persist_write_int(LOCAL_ICON_KEY, new_tuple->value->uint8);
+	  		//APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring); 
+      		break;
+	  
+	  
 	  case DUAL_TEMP_KEY:
 	  		persist_write_string(DUAL_TEMP_KEY, new_tuple->value->cstring);
 	  		//APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
+      		break;
+	  
+	  case DUAL_ICON_KEY:
+	  		persist_write_int(DUAL_ICON_KEY, new_tuple->value->uint8);
+	  		//APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring); 
       		break;
 
   }
@@ -457,6 +524,18 @@ itoa10 (int value, char *result)
 	  	if (persist_exists(DUAL_TZNAME_KEY)){persist_read_string(DUAL_TZNAME_KEY, DualTZName, sizeof(DualTZName));}
 	  	if (persist_exists(LOCAL_TEMP_KEY)){persist_read_string(LOCAL_TEMP_KEY, strLocalTemp, sizeof(strLocalTemp));}
 	  	if (persist_exists(DUAL_TEMP_KEY)){persist_read_string(DUAL_TEMP_KEY, strDualTemp, sizeof(strDualTemp));}
+	  	if (persist_exists(LOCAL_ICON_KEY)){
+			if (s_res_takeoff != NULL){gbitmap_destroy(s_res_takeoff);}
+			s_res_takeoff = gbitmap_create_with_resource(WEATHER_ICONS[persist_read_int(LOCAL_ICON_KEY)]);
+			bitmap_layer_set_bitmap(Local_img, s_res_takeoff);
+		}
+	  	if (persist_exists(DUAL_ICON_KEY)){
+			if (s_res_landing != NULL){gbitmap_destroy(s_res_landing);}
+			s_res_landing = gbitmap_create_with_resource(WEATHER_ICONS[persist_read_int(DUAL_ICON_KEY)]);
+			bitmap_layer_set_bitmap(Dual_img, s_res_landing);
+		}
+	 
+
 	  	
 	  
 }
@@ -466,7 +545,7 @@ itoa10 (int value, char *result)
 //************************************************//
 static void send_cmd(void) {
 
-         Tuplet value = MyTupletCString(8, "");
+         Tuplet value = MyTupletCString(2, "---");
         
          DictionaryIterator *iter;
          app_message_outbox_begin(&iter);
@@ -514,6 +593,8 @@ void SetupMessages(){
 					MyTupletCString(DUAL_TZNAME_KEY, ""),
 					MyTupletCString(LOCAL_TEMP_KEY, ""),
 					MyTupletCString(DUAL_TEMP_KEY, ""),
+					TupletInteger(LOCAL_ICON_KEY, 0), 
+					TupletInteger(DUAL_ICON_KEY, 0), 
 					
                 }; //TUPLET INITIAL VALUES
         
@@ -537,6 +618,12 @@ void handle_init(void)
 	if (persist_exists(LOCAL_TEMP_KEY)){persist_read_string(LOCAL_TEMP_KEY, strLocalTemp, sizeof(strLocalTemp));}
 	if (persist_exists(DUAL_TEMP_KEY)){persist_read_string(DUAL_TEMP_KEY, strDualTemp, sizeof(strDualTemp));}
 	
+	if (persist_exists(LOCAL_ICON_KEY)){s_res_takeoff = gbitmap_create_with_resource(WEATHER_ICONS[persist_read_int(LOCAL_ICON_KEY)]);}
+	else{s_res_takeoff = gbitmap_create_with_resource(RESOURCE_ID_TakeOff);}
+	
+	if (persist_exists(DUAL_ICON_KEY)){s_res_landing = gbitmap_create_with_resource(WEATHER_ICONS[persist_read_int(DUAL_ICON_KEY)]);}
+	else{s_res_landing = gbitmap_create_with_resource(RESOURCE_ID_Landing);}
+	
 	//Display the UI
 	show_main();
 	
@@ -545,7 +632,7 @@ void handle_init(void)
 	
 	//Setup the date & time
 	getDate();
-	getTime();
+	//getTime();
 	
 	//subscribe to the tick event
 	time_t now = time(NULL);

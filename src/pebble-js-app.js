@@ -7,6 +7,10 @@ var localtzname;
 var dualtimezone;
 var dualtzname;
 
+var locallat;
+var locallng;
+var localpos;
+
 var CLEAR_DAY = 0;
 var CLEAR_NIGHT = 1;
 var WINDY = 2;
@@ -84,9 +88,14 @@ var imageId = {
 
 var options = JSON.parse(localStorage.getItem('options'));
 //console.log('read options: ' + JSON.stringify(options));
-if (options === null) options = {	"local" : "Madrid", //default to "Madrid"
-									"dual" : "Mountain View" //default to "Mountain View"
+if (options === null) options = {	'use_gps' : "false",
+									"localpos" : "Madrid", //default to "Madrid"
+									"dualpos" : "Mountain View", //default to "Mountain View"
+									"units" : "celsius",
+									"key" : "",
+									"weather" : "false"
 };
+
 
 
 //////////////////////
@@ -135,6 +144,36 @@ function getTimeStamp(){
 
 //Try to optimizd the code//
 
+function getLocationName(pos){
+	
+	var url = "http://maps.googleapis.com/maps/api/geocode/json?latlng=" + pos + "";
+	console.log("get location URL: " + url);
+	var response;
+	var req = new XMLHttpRequest();
+	req.open('GET', url, false);
+	req.send();
+
+		if (req.readyState == 4) {
+			if (req.status == 200) {
+				response = JSON.parse(req.responseText);
+				if (response) {
+					//var position = new Array({'lat' : response.results[0].geometry.location.lat,
+					//						'long' : response.results[0].geometry.location.lng});
+
+					var location = new Array(2);
+					location[0] = response.results[0].address_components[1].short_name; //Street
+					location[1] = response.results[0].address_components[2].short_name;//City
+					location[2] = response.results[0].address_components[3].long_name; //Province
+					//console.log("ya he rellenado el array y voy a leerlo");
+					console.log("Street: " + location[0]);
+					console.log("City: " + location[1]);
+					console.log("Province: " + location[2]);
+					return location;
+					}
+				}
+			}
+}
+
 function getPosition(cityname){
 	
 
@@ -170,7 +209,7 @@ function getPosition(cityname){
 function getTimeZone(position, timestamp){
 
 	var url = "https://maps.googleapis.com/maps/api/timezone/json?location="+position+"&timestamp="+timestamp+"&key=" + apikey;
-	console.log("getDualTimeZone URL: " + url);
+	console.log("getTimeZone URL: " + url);
 	var response;
 	var req = new XMLHttpRequest();
 	
@@ -201,7 +240,7 @@ function getTimeZone(position, timestamp){
 			}
 }
 
-function Send2Pebble(Action,dualname, dualtz,dualtzname,localname,localtz,localtzname, localtemp, dualtemp){
+function Send2Pebble(Action,dualname, dualtz,dualtzname,localname,localtz,localtzname, localtemp, dualtemp, localicon, dualicon){
 	
 	if (Action == 1) { //Initialize
 	//send the values to the Pebble!!
@@ -214,12 +253,16 @@ function Send2Pebble(Action,dualname, dualtz,dualtzname,localname,localtz,localt
 							"localtzname" : localtzname,
 							"localtemp" : localtemp,
 							"dualtemp" : dualtemp,
+							"localicon" : localicon,
+							"dualicon" : dualicon,
 		});
 	}
 	else if (Action == 2) { //Refresh Weather data
 		Pebble.sendAppMessage({
 							"localtemp" : localtemp,
 							"dualtemp" : dualtemp,
+							"localicon" : localicon,
+							"dualicon" : dualicon,
 		});
 		
 	}
@@ -227,37 +270,119 @@ function Send2Pebble(Action,dualname, dualtz,dualtzname,localname,localtz,localt
 }
 
 
-function initialize(){
-	var timestamp = getTimeStamp();
-	//Get Local Position
-	var localpos = getPosition("Navalcarnero");
+//Retrieve the weather based on the selected settings (GPS on/off)
+var locationOptions = { "timeout": 15000, "maximumAge": 60000, "enableHighAccuracy": true};
+
+function useGPS() {
+
+    window.navigator.geolocation.getCurrentPosition(locationSuccess,
+                                                    locationError,
+                                                    locationOptions);
+}
+
+
+
+function locationSuccess(pos) {
+  var coordinates = pos.coords;
+  var timestamp = getTimeStamp();
+	
+  console.log("location success");
+	
+	//Get Local Name
+	var localname = getLocationName(coordinates.latitude + ',' + coordinates.longitude);
 	//Get Dual Position
-	var dualpos = getPosition("Mountain View");
+	var dualpos = getPosition(options['dualpos']);
 	//Get Local Timezone
-	var localtz = getTimeZone(localpos[2],timestamp);
+	var localtz = getTimeZone(coordinates.latitude + ',' + coordinates.longitude,timestamp);
 	//Get Dual Timezone
 	var dualtz = getTimeZone(dualpos[2],timestamp);
 	
 	//Get Weather for Local Zone
-	var localweather = getWeatherFromLatLong(localpos[0], localpos[1]);
-	
+	var localweather = getWeatherFromLatLong(coordinates.latitude, coordinates.longitude);
+
 	//Get Weather for Dual Zone
 	var dualweather = getWeatherFromLatLong(dualpos[0], dualpos[1]);
 	
 	//Send messages to Pebble
-	console.log("Local Name: " + "Navalcarnero");
-	console.log("Local TZ: " + localtz[0]);
-	console.log("Local TZ Name: " + localtz[1]);
-	console.log("Dual Name: " + "Mountain View");
-	console.log("Dual TZ: " + dualtz[0]);
-	console.log("Dual TZ Name: " + dualtz[1]);
-	console.log("Local Temp: " + localweather[0]);
-	console.log("Local Icon: " + localweather[1]);
-	console.log("Local Temp: " + dualweather[0]);
-	console.log("Local Icon: " + dualweather[1]);
+		console.log("Local Name: " + localname[1]);
+		console.log("Local TZ: " + localtz[0]);
+		console.log("Local TZ Name: " + localtz[1]);
+		console.log("Dual Name: " + options['dualpos']);
+		console.log("Dual TZ: " + dualtz[0]);
+		console.log("Dual TZ Name: " + dualtz[1]);
+		console.log("Local Temp: " + localweather[0]);
+		console.log("Local Icon: " + localweather[1]);
+		console.log("Local Temp: " + dualweather[0]);
+		console.log("Local Icon: " + dualweather[1]);
+
+	Send2Pebble(1,options['dualpos'], dualtz[0], dualtz[1], localname[1], localtz[0], localtz[1], localweather[0], dualweather[0], localweather[1], dualweather[1]);
 	
-	Send2Pebble(1,"Mountain View", dualtz[0], dualtz[1], "Navalcarnero", localtz[0], localtz[1], localweather[0], dualweather[0]);
+}
+
+function locationError(err) {
+  console.warn('location error (' + err.code + '): ' + err.message);
+}
+
+function weatherGPS(){
+	 window.navigator.geolocation.getCurrentPosition(weatherSuccess,
+                                                    locationError,
+                                                    locationOptions);	
+}
+
+function weatherSuccess(pos){
+	var coordinates = pos.coords;
+	//Get Local Name
+	var localname = getLocationName(coordinates.latitude + ',' + coordinates.longitude);
+	//Get Dual Position
+	var dualpos = getPosition(options['dualpos']);
 	
+	//Get Weather for Local Zone
+	var localweather = getWeatherFromLatLong(coordinates.latitude, coordinates.longitude);
+	
+	//Get Weather for Dual Zone
+	var dualweather = getWeatherFromLatLong(dualpos[0], dualpos[1]);
+	
+	Send2Pebble(2,options['dualpos'], null, null, localname, null, null, localweather[0], dualweather[0], localweather[1], dualweather[1]);
+	
+}
+
+function initialize(){
+	var timestamp = getTimeStamp();
+	
+	if (options['use_gps'] == "true") {
+		useGPS();
+	}
+	else{
+		//Get Local Position
+		var localpos = getPosition(options['localpos']);
+		//Get Dual Position
+		var dualpos = getPosition(options['dualpos']);
+		//Get Local Timezone
+		var localtz = getTimeZone(localpos[2],timestamp);
+		//Get Dual Timezone
+		var dualtz = getTimeZone(dualpos[2],timestamp);
+
+		//Get Weather for Local Zone
+		var localweather = getWeatherFromLatLong(localpos[0], localpos[1]);
+
+		//Get Weather for Dual Zone
+		var dualweather = getWeatherFromLatLong(dualpos[0], dualpos[1]);
+	
+	
+		//Send messages to Pebble
+		console.log("Local Name: " + options['localpos']);
+		console.log("Local TZ: " + localtz[0]);
+		console.log("Local TZ Name: " + localtz[1]);
+		console.log("Dual Name: " + options['dualpos']);
+		console.log("Dual TZ: " + dualtz[0]);
+		console.log("Dual TZ Name: " + dualtz[1]);
+		console.log("Local Temp: " + localweather[0]);
+		console.log("Local Icon: " + localweather[1]);
+		console.log("Local Temp: " + dualweather[0]);
+		console.log("Local Icon: " + dualweather[1]);
+	
+		Send2Pebble(1,options['dualpos'], dualtz[0], dualtz[1], options['localpos'], localtz[0], localtz[1], localweather[0], dualweather[0], localweather[1], dualweather[1]);
+	}
 
 
 }
@@ -349,25 +474,57 @@ function getWeatherFromWoeid(woeid) {
 
 function updateWeather(){
 	
-	//Get Local Position
-	var localpos = getPosition("Navalcarnero");
-	//Get Dual Position
-	var dualpos = getPosition("Mountain View");
-	
-	//Get Weather for Local Zone
-	var localweather = getWeatherFromLatLong(localpos[0], localpos[1]);
-	
-	//Get Weather for Dual Zone
-	var dualweather = getWeatherFromLatLong(dualpos[0], dualpos[1]);
-	
-	Send2Pebble(2,"Mountain View", null, null, "Navalcarnero", null, null, localweather[0], dualweather[0]);
-	
+	if (options['use_gps'] == "true") {
+		weatherGPS();
+	}
+	else{
+		//Get Local Position
+		var localpos = getPosition(options['localpos']);
+		//Get Dual Position
+		var dualpos = getPosition(options['dualpos']);
+
+		//Get Weather for Local Zone
+		var localweather = getWeatherFromLatLong(localpos[0], localpos[1]);
+
+		//Get Weather for Dual Zone
+		var dualweather = getWeatherFromLatLong(dualpos[0], dualpos[1]);
+
+		Send2Pebble(2,options['dualpos'], null, null, options['localpos'], null, null, localweather[0], dualweather[0], localweather[1], dualweather[1]);
+	}
 }
 
 
 ///////////////////////////////////////
 //Setup the connection with the watch//
 ///////////////////////////////////////
+//Displays the configuration page in the phone
+Pebble.addEventListener('showConfiguration', function(e) {
+  var uri = 'http://dabdemon.github.io/HoradeViaje/development.html?' + //Here you need to enter your configuration webservice
+	'&use_gps=' + encodeURIComponent(options['use_gps']) +
+    '&localpos=' + encodeURIComponent(options['localpos']) +
+	'&dualpos=' + encodeURIComponent(options['dualpos']) +
+    '&units=' + encodeURIComponent(options['units']) +
+	'&UUID=' + encodeURIComponent(Pebble.getAccountToken()) +
+	'&lt=' + //encodeURIComponent(CheckUserKey()) +
+	'&key=' + encodeURIComponent(options['key']) +
+	'&weather=' + encodeURIComponent(options['weather']);
+
+	//console.log('showing configuration at uri: ' + uri);
+
+  Pebble.openURL(uri);
+});
+
+//Retrieve user settings after submitting
+Pebble.addEventListener('webviewclosed', function(e) {
+  if (e.response) {
+    options = JSON.parse(decodeURIComponent(e.response));
+    localStorage.setItem('options', JSON.stringify(options));
+    console.log('storing options: ' + JSON.stringify(options));
+    initialize();
+  } else {
+    console.log('no options received');
+  }
+});
 
 //Receive the Pebble's call to refresh the weather info
 Pebble.addEventListener("appmessage",
@@ -379,6 +536,4 @@ Pebble.addEventListener("appmessage",
 Pebble.addEventListener("ready", function(e) {
 	console.log("connect!" + e.ready);
 	initialize();
-	
-	
 });

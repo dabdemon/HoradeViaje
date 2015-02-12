@@ -12,13 +12,103 @@
         "localtzname": 2
     },
     "capabilities": [
-        ""
+        "configurable"
     ],
     "companyName": "dabdemon",
     "longName": "TripTime",
     "projectType": "native",
     "resources": {
         "media": [
+            {
+                "file": "images/wind_small.png",
+                "name": "ICON_WIND",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_THUNDER_SMALL.png",
+                "name": "ICON_THUNDER",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_SNOW_SLEET_SMALL.png",
+                "name": "ICON_SNOW_SLEET",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_SNOW_SMALL.png",
+                "name": "ICON_SNOW",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_SLEET_SMALL.png",
+                "name": "ICON_SLEET",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_RAIN_SNOW_SMALL.png",
+                "name": "ICON_RAIN_SNOW",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_RAIN_SMALL.png",
+                "name": "ICON_RAIN",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_RAIN_SLEET_SMALL.png",
+                "name": "ICON_RAIN_SLEET",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_PARTLY_CLOUDY_NIGHT_SMALL.png",
+                "name": "ICON_PARTLY_CLOUDY_NIGHT",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_PARTLY_CLOUDY_DAY.png",
+                "name": "ICON_PARTLY_CLOUDY_DAY",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_NOT_AVAILABLE_SMALL.png",
+                "name": "ICON_NA",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_HOT_SMALL.png",
+                "name": "ICON_HOT",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_FOG_SMALL.png",
+                "name": "ICON_FOG",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_DRIZZLE_SMALL.png",
+                "name": "ICON_DRIZZLE",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_COLD_SMALL.png",
+                "name": "ICON_COLD",
+                "type": "png"
+            },
+            {
+                "file": "images/ICON_CLOUDY_SMALL.png",
+                "name": "ICON_CLOUDY",
+                "type": "png"
+            },
+            {
+                "file": "images/clear-day_small.png",
+                "name": "ICON_CLEAR_DAY",
+                "type": "png"
+            },
+            {
+                "file": "images/clear-night_small.png",
+                "name": "ICON_CLEAR_NIGHT",
+                "type": "png"
+            },
             {
                 "file": "images/landing.png",
                 "name": "Landing",
@@ -28,16 +118,6 @@
                 "file": "images/takeoff.png",
                 "name": "TakeOff",
                 "type": "png"
-            },
-            {
-                "file": "images/ICON_PARTLY_CLOUDY_DAY.png",
-                "name": "Partial_cloudy_day",
-                "type": "png-trans"
-            },
-            {
-                "file": "images/clear-day_small.png",
-                "name": "clear_day",
-                "type": "png-trans"
             }
         ]
     },
