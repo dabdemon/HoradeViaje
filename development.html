@@ -153,7 +153,7 @@
                     $('#weather').prop('disabled', true);
                    
                     //Enable LT 1 fields
-                    if (getQueryVariable('lt') == "1") {
+                    if (parseInt(getQueryVariable('lt')) > 1) {
                         $('#weather').prop('disabled', false);
                     }
                   
