@@ -121,10 +121,11 @@
             }
         ]
     },
+    "sdkVersion": "2",
     "shortName": "TripTime",
     "uuid": "588cbd29-7273-410f-9741-7e2073d4dba4",
     "versionCode": 1,
-    "versionLabel": "1.0",
+    "versionLabel": "1.1",
     "watchapp": {
         "watchface": true
     }

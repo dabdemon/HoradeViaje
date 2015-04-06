@@ -1,5 +1,6 @@
 #include "main.h"
 #include <pebble.h>
+#include "PDUtils.h"
 
 //Pebble KEYS
 enum TripTimeKeys {
@@ -35,6 +36,8 @@ static const uint32_t WEATHER_ICONS[] = {
   RESOURCE_ID_ICON_THUNDER,
   RESOURCE_ID_ICON_NA,
   RESOURCE_ID_ICON_DRIZZLE,
+  RESOURCE_ID_TakeOff,
+  RESOURCE_ID_Landing,
 }; 
 	
 //Variables
@@ -56,8 +59,8 @@ static const uint32_t WEATHER_ICONS[] = {
 	char LocalTZName[]  = "     ";
 	char DualTZName[]  = "     ";
 
-	char strLocalTemp[] = "    ";
-    char strDualTemp[] = "    ";
+	char strLocalTemp[] = "     ";
+    char strDualTemp[] = "     ";
 
 	char strLocalAMPMInd[]  = "  ";
 	char strDualAMPMInd[]  = "  ";
@@ -121,16 +124,10 @@ static void initialise_ui(void) {
   text_layer_set_font(LocalTZ, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalTZ);
   
-  // LocalTemp
-  LocalTemp = text_layer_create(GRect(73, 13, 65, 45)); //(GRect(73, 15, 65, 42));
-  text_layer_set_background_color(LocalTemp, GColorClear);
-  text_layer_set_text(LocalTemp, strLocalTemp);
-  text_layer_set_text_alignment(LocalTemp, GTextAlignmentRight);
-  text_layer_set_font(LocalTemp, s_res_bitham_42_light);
-  layer_add_child(window_get_root_layer(s_window), (Layer *)LocalTemp);
+  //Here it was LocalTemp
   
   // LocalTime
-  LocalTime = text_layer_create(GRect(3, 49, 93, 42));
+  LocalTime = text_layer_create(GRect(3, 49, 95, 42));
   text_layer_set_background_color(LocalTime, GColorClear);
   text_layer_set_text(LocalTime, localtime_text);
   text_layer_set_text_alignment(LocalTime, GTextAlignmentRight);
@@ -160,7 +157,7 @@ static void initialise_ui(void) {
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalDay);
   
   // DualTime
-  DualTime = text_layer_create(GRect(3, 130, 93, 42));
+  DualTime = text_layer_create(GRect(3, 130, 95, 42));
   text_layer_set_background_color(DualTime, GColorClear);
   text_layer_set_text(DualTime, dualtime_text);
   text_layer_set_text_alignment(DualTime, GTextAlignmentRight);
@@ -190,13 +187,7 @@ static void initialise_ui(void) {
   text_layer_set_font(DualDay, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualDay);
   
-  // DualTemp 
-  DualTemp = text_layer_create(GRect(73, 95, 65, 45)); //(93,97,45,42) //GRect(73, 97, 65, 42))
-  text_layer_set_background_color(DualTemp, GColorClear);
-  text_layer_set_text(DualTemp, strDualTemp);
-  text_layer_set_text_alignment(DualTemp, GTextAlignmentRight);
-  text_layer_set_font(DualTemp, s_res_bitham_42_light);
-  layer_add_child(window_get_root_layer(s_window), (Layer *)DualTemp);
+  //Here it was DualTemp
   
   // DualTZ
   DualTZ = text_layer_create(GRect(28, 102, 41, 14));
@@ -225,6 +216,22 @@ static void initialise_ui(void) {
   text_layer_set_background_color(s_textlayer_2, GColorClear);
   text_layer_set_text(s_textlayer_2, dualname);
   layer_add_child(window_get_root_layer(s_window), (Layer *)s_textlayer_2);
+	
+	// LocalTemp
+  LocalTemp = text_layer_create(GRect(50, 13, 90, 45)); //(GRect(73, 15, 65, 42));
+  text_layer_set_background_color(LocalTemp, GColorClear);
+  text_layer_set_text(LocalTemp, strLocalTemp);
+  text_layer_set_text_alignment(LocalTemp, GTextAlignmentRight);
+  text_layer_set_font(LocalTemp, s_res_bitham_42_light);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)LocalTemp);
+	
+	// DualTemp 
+  DualTemp = text_layer_create(GRect(50, 95, 90, 45)); //(93,97,45,42) //GRect(73, 97, 65, 42))
+  text_layer_set_background_color(DualTemp, GColorClear);
+  text_layer_set_text(DualTemp, strDualTemp);
+  text_layer_set_text_alignment(DualTemp, GTextAlignmentRight);
+  text_layer_set_font(DualTemp, s_res_bitham_42_light);
+  layer_add_child(window_get_root_layer(s_window), (Layer *)DualTemp);
 }
 
 static void destroy_ui(void) {
@@ -279,41 +286,19 @@ void getDualTime(){
 		
 			timediff= dualtz - localtz;
 	
+			
 			//Define and Calculate Time Zones
 			//TIME ZONE 1
-				struct tm *tz1Ptr = gmtime(&actualPtr);
-				tz1Ptr->tm_hour += timediff; //change this hard code
-				tz1Ptr->tm_min += 0; //change this hard code
+			struct tm *tzPtr = gmtime(&actualPtr);
 		
-				//try to fix the timezone when half and hour diff
-				if (tz1Ptr->tm_min >=60){
-					tz1Ptr->tm_hour = 1 + tz1Ptr->tm_hour;
-					tz1Ptr->tm_min = tz1Ptr->tm_min - 60;
-				}
-		
-				//try to fix the timezone when half and hour diff
-				if (tz1Ptr->tm_min <0){
-					tz1Ptr->tm_hour = tz1Ptr->tm_hour - 1;
-					tz1Ptr->tm_min = 60 + tz1Ptr->tm_min;
-				}
-
-				//try to fix the timezone when negative
-		
-				if (tz1Ptr->tm_hour <0){
-					tz1Ptr->tm_hour = 24 + tz1Ptr->tm_hour;
-					tz1Ptr->tm_mday = tz1Ptr->tm_mday - 1;
-					tz1Ptr->tm_wday = tz1Ptr->tm_wday - 1;
-				}
-		
-				//try to fix the timezone when more than 24
-				if (tz1Ptr->tm_hour >=24){
-					tz1Ptr->tm_hour = tz1Ptr->tm_hour - 24;
-					tz1Ptr->tm_mday = tz1Ptr->tm_mday + 1;
-					tz1Ptr->tm_wday = tz1Ptr->tm_wday + 1;
-				}
-
-				if (clock_is_24h_style()){strftime(dualtime_text, sizeof(dualtime_text), "%H:%M", tz1Ptr);}
-				else {strftime(dualtime_text, sizeof(dualtime_text), "%I:%M", tz1Ptr);}
+			tzPtr->tm_sec += timediff;
+			//Since mktime() is not realible in Pebble's firmware, use PUtils to built the dual time.
+			time_t dualtime = p_mktime(tzPtr);
+			struct tm *tz1Ptr = gmtime(&dualtime);
+	
+	
+			if (clock_is_24h_style()){strftime(dualtime_text, sizeof(dualtime_text), "%H:%M", tz1Ptr);}
+			else {strftime(dualtime_text, sizeof(dualtime_text), "%I:%M", tz1Ptr);}
 	
 
 				//Remove the leading 0s
@@ -330,6 +315,8 @@ void getDualTime(){
 			}
 			
 			strftime(dualweekday_text,sizeof(dualweekday_text),"%A",tz1Ptr);
+	
+	
 			
 	
 			//DISPLAY THE TIME ZONES	
@@ -337,7 +324,6 @@ void getDualTime(){
 			text_layer_set_text(DualDay,dualweekday_text);
 			text_layer_set_text(DualDate,dualmonth_text); 
 			if(!clock_is_24h_style()){strftime(strDualAMPMInd, sizeof(strDualAMPMInd), "%p", tz1Ptr);} 
-
 }
 
 //*********************************//
@@ -464,7 +450,8 @@ itoa10 (int value, char *result)
 	  		//APP_LOG(APP_LOG_LEVEL_DEBUG, new_tuple->value->cstring);
       		break;
 	  case LOCAL_TZ_KEY:
-	      	persist_write_int(LOCAL_TZ_KEY, new_tuple->value->uint16);
+	      	//persist_write_int(LOCAL_TZ_KEY, new_tuple->value->uint16);
+	 		persist_write_int(LOCAL_TZ_KEY, new_tuple->value->uint32);
 	  
 	  		//debug
 	  		//static char strdebug[15];
@@ -545,7 +532,7 @@ itoa10 (int value, char *result)
 //************************************************//
 static void send_cmd(void) {
 
-         Tuplet value = MyTupletCString(2, "---");
+         Tuplet value = MyTupletCString(2, LocalTZName);
         
          DictionaryIterator *iter;
          app_message_outbox_begin(&iter);
@@ -586,15 +573,15 @@ void SetupMessages(){
         
                 Tuplet initial_values[] = {
 					MyTupletCString(LOCAL_NAME_KEY, localname),
-					TupletInteger(LOCAL_TZ_KEY, 0), 
-					MyTupletCString(LOCAL_TZNAME_KEY, ""),
+					TupletInteger(LOCAL_TZ_KEY, persist_read_int(LOCAL_TZ_KEY)), 
+					MyTupletCString(LOCAL_TZNAME_KEY, LocalTZName),
 					MyTupletCString(DUAL_NAME_KEY, dualname),
-					TupletInteger(DUAL_TZ_KEY, 0),
-					MyTupletCString(DUAL_TZNAME_KEY, ""),
-					MyTupletCString(LOCAL_TEMP_KEY, ""),
-					MyTupletCString(DUAL_TEMP_KEY, ""),
-					TupletInteger(LOCAL_ICON_KEY, 0), 
-					TupletInteger(DUAL_ICON_KEY, 0), 
+					TupletInteger(DUAL_TZ_KEY, persist_read_int(DUAL_TZ_KEY)),
+					MyTupletCString(DUAL_TZNAME_KEY, DualTZName),
+					MyTupletCString(LOCAL_TEMP_KEY, strLocalTemp),
+					MyTupletCString(DUAL_TEMP_KEY, strDualTemp),
+					TupletInteger(LOCAL_ICON_KEY, persist_read_int(LOCAL_ICON_KEY)), 
+					TupletInteger(DUAL_ICON_KEY, persist_read_int(DUAL_ICON_KEY)), 
 					
                 }; //TUPLET INITIAL VALUES
         

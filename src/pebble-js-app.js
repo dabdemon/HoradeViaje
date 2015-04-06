@@ -1,7 +1,7 @@
 //////////////////////////////////
 //DEFINE AND INITALIZE VARIABLES//
 //////////////////////////////////
-var apikey = "AIzaSyBjakdvAf_X_MnC6UnurVlV-muBtD4b_I8";
+var apikey = "AIzaSyBjakdvAf_XY_MnC6UnurVlV-muBtD4b_I8";
 var localtimezone;
 var localtzname;
 var dualtimezone;
@@ -90,7 +90,7 @@ var options = JSON.parse(localStorage.getItem('options'));
 //console.log('read options: ' + JSON.stringify(options));
 if (options === null) options = {	'use_gps' : "false",
 									"localpos" : "Madrid", //default to "Madrid"
-									"dualpos" : "Mountain View", //default to "Mountain View"
+									"dualpos" : "delhi", //default to "Mountain View"
 									"units" : "celsius",
 									"key" : "",
 									"weather" : "false"
@@ -224,7 +224,10 @@ function getTimeZone(position, timestamp){
 					var rawOffset = response.rawOffset;
 					console.log("dual dstOffset = " + dstOffset);
 					console.log("dual rawOffset = " + rawOffset);
-					var tz = (dstOffset + rawOffset)/3600; //check the daylight saving time
+					console.log("dual name = " + response.timeZoneName);
+					//var tz = (dstOffset + rawOffset)/3600; //check the daylight saving time
+					
+					var tz = (dstOffset + rawOffset); //check the daylight saving time
 
 					var tzname = response.timeZoneName;
 					tzname = ShortTimeZone(tzname);
@@ -271,7 +274,7 @@ function Send2Pebble(Action,dualname, dualtz,dualtzname,localname,localtz,localt
 
 
 //Retrieve the weather based on the selected settings (GPS on/off)
-var locationOptions = { "timeout": 15000, "maximumAge": 60000, "enableHighAccuracy": true};
+var locationOptions = { "timeout": 15000, "maximumAge": 0, "enableHighAccuracy": true};
 
 function useGPS() {
 
@@ -297,26 +300,30 @@ function locationSuccess(pos) {
 	//Get Dual Timezone
 	var dualtz = getTimeZone(dualpos[2],timestamp);
 	
-	//Get Weather for Local Zone
-	var localweather = getWeatherFromLatLong(coordinates.latitude, coordinates.longitude);
+	if (options['weather'] == "true"){
+		//Get Weather for Local Zone
+		var localweather = getWeatherFromLatLong(coordinates.latitude, coordinates.longitude);
 
-	//Get Weather for Dual Zone
-	var dualweather = getWeatherFromLatLong(dualpos[0], dualpos[1]);
-	
-	//Send messages to Pebble
-		console.log("Local Name: " + localname[1]);
-		console.log("Local TZ: " + localtz[0]);
-		console.log("Local TZ Name: " + localtz[1]);
-		console.log("Dual Name: " + options['dualpos']);
-		console.log("Dual TZ: " + dualtz[0]);
-		console.log("Dual TZ Name: " + dualtz[1]);
-		console.log("Local Temp: " + localweather[0]);
-		console.log("Local Icon: " + localweather[1]);
-		console.log("Local Temp: " + dualweather[0]);
-		console.log("Local Icon: " + dualweather[1]);
+		//Get Weather for Dual Zone
+		var dualweather = getWeatherFromLatLong(dualpos[0], dualpos[1]);
 
-	Send2Pebble(1,options['dualpos'], dualtz[0], dualtz[1], localname[1], localtz[0], localtz[1], localweather[0], dualweather[0], localweather[1], dualweather[1]);
-	
+		//Send messages to Pebble
+			console.log("Local Name: " + localname[1]);
+			console.log("Local TZ: " + localtz[0]);
+			console.log("Local TZ Name: " + localtz[1]);
+			console.log("Dual Name: " + options['dualpos']);
+			console.log("Dual TZ: " + dualtz[0]);
+			console.log("Dual TZ Name: " + dualtz[1]);
+			console.log("Local Temp: " + localweather[0]);
+			console.log("Local Icon: " + localweather[1]);
+			console.log("Local Temp: " + dualweather[0]);
+			console.log("Local Icon: " + dualweather[1]);
+
+		Send2Pebble(1,options['dualpos'], dualtz[0], dualtz[1], localname[1], localtz[0], localtz[1], localweather[0], dualweather[0], localweather[1], dualweather[1]);
+	}
+	else{
+		Send2Pebble(1,options['dualpos'], dualtz[0], dualtz[1], localname[1], localtz[0], localtz[1], "    ", "    ", 18, 19);
+	}
 }
 
 function locationError(err) {
@@ -380,8 +387,12 @@ function initialize(){
 		console.log("Local Icon: " + localweather[1]);
 		console.log("Local Temp: " + dualweather[0]);
 		console.log("Local Icon: " + dualweather[1]);
-	
+	if (options['weather'] == "true"){
 		Send2Pebble(1,options['dualpos'], dualtz[0], dualtz[1], options['localpos'], localtz[0], localtz[1], localweather[0], dualweather[0], localweather[1], dualweather[1]);
+	}
+	else{
+		Send2Pebble(1,options['dualpos'], dualtz[0], dualtz[1], options['localpos'], localtz[0], localtz[1], "    ", "    ", 18, 19);
+	}
 	}
 
 
@@ -429,7 +440,7 @@ function getWeatherFromWoeid(woeid) {
 	
 	/*if Hong Kong then override the woeid with a valid one*/
 	if (woeid ==24865698){woeid=12467924;}
-	var celsius = 'celsius';
+	var celsius = options['units'] == 'celsius';
 	
 	
 	//get today's conditions	
@@ -482,16 +493,19 @@ function updateWeather(){
 		var localpos = getPosition(options['localpos']);
 		//Get Dual Position
 		var dualpos = getPosition(options['dualpos']);
+		
 
-		//Get Weather for Local Zone
-		var localweather = getWeatherFromLatLong(localpos[0], localpos[1]);
+			//Get Weather for Local Zone
+			var localweather = getWeatherFromLatLong(localpos[0], localpos[1]);
 
-		//Get Weather for Dual Zone
-		var dualweather = getWeatherFromLatLong(dualpos[0], dualpos[1]);
-
-		Send2Pebble(2,options['dualpos'], null, null, options['localpos'], null, null, localweather[0], dualweather[0], localweather[1], dualweather[1]);
+			//Get Weather for Dual Zone
+			var dualweather = getWeatherFromLatLong(dualpos[0], dualpos[1]);
+			
+			Send2Pebble(2,options['dualpos'], null, null, options['localpos'], null, null, localweather[0], dualweather[0], localweather[1], dualweather[1]);
+		
 	}
 }
+
 
 
 ///////////////////////////////////////
@@ -505,7 +519,7 @@ Pebble.addEventListener('showConfiguration', function(e) {
 	'&dualpos=' + encodeURIComponent(options['dualpos']) +
     '&units=' + encodeURIComponent(options['units']) +
 	'&UUID=' + encodeURIComponent(Pebble.getAccountToken()) +
-	'&lt=' + //encodeURIComponent(CheckUserKey()) +
+	'&lt=' + encodeURIComponent(CheckUserKey()) +
 	'&key=' + encodeURIComponent(options['key']) +
 	'&weather=' + encodeURIComponent(options['weather']);
 
@@ -529,7 +543,7 @@ Pebble.addEventListener('webviewclosed', function(e) {
 //Receive the Pebble's call to refresh the weather info
 Pebble.addEventListener("appmessage",
                         function(e) {
-                          updateWeather();
+							if (options['weather'] == "true"){updateWeather();}
                         });
 
 //Initiate the Appsync (This event is called just once)
