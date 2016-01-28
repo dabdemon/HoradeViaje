@@ -1,6 +1,7 @@
 #include "main.h"
 #include <pebble.h>
 #include "PDUtils.h"
+#include "gbitmap_color_palette_manipulator.h"
 
 //Pebble KEYS
 enum TripTimeKeys {
@@ -39,6 +40,16 @@ static const uint32_t WEATHER_ICONS[] = {
   RESOURCE_ID_TakeOff,
   RESOURCE_ID_Landing,
 }; 
+
+/*
+//number of available themes
+#define theme_num = 2;
+//Define the theme colors
+uint8_t theme[4*theme_num]= {
+    GColorMidnightGreen, GColorCadetBlue, GColorWhite, GColorBlack,   
+    GColorPurple, GColorShockingPink, GColorWhite, GColorBlack
+};
+*/
 	
 //Variables
 	static char localtime_text[] = "00:00";
@@ -98,27 +109,47 @@ static BitmapLayer *Dual_img;
 static TextLayer *s_textlayer_1;
 static TextLayer *s_textlayer_2;
 
+#define LOCAL_AREA	PBL_IF_ROUND_ELSE(GRect(0, 0, 180, 89),GRect(3, 9, 137, 75))
+#define DUAL_AREA	PBL_IF_ROUND_ELSE(GRect(0,91, 180, 89),GRect(4, 93, 137, 70))
+#define LOCAL_TIME	PBL_IF_ROUND_ELSE(GRect(33, 44, 95, 42),GRect(3, 49, 95, 42))
+#define LOCAL_AMPM	PBL_IF_ROUND_ELSE(GRect(130, 50, 20, 20),GRect(100, 54, 20, 20))
+#define LOCAL_TZ 	PBL_IF_ROUND_ELSE(GRect(130, 60, 20, 20),GRect(28, 20, 41, 14))
+#define LOCAL_DATE 	PBL_IF_ROUND_ELSE(GRect(90, 35, 88, 16),GRect(11, 40, 98, 16))
+#define LOCAL_DAY 	PBL_IF_ROUND_ELSE(GRect(0, 35, 75, 16),GRect(11, 30, 98, 16))
+#define LOCAL_CITY 	PBL_IF_ROUND_ELSE(GRect(0, 73, 180, 16),GRect(28, 8, 111, 17))
+#define LOCAL_TEMP 	PBL_IF_ROUND_ELSE(GRect(0, -4, 115, 45),GRect(50, 13, 90, 45))
+#define LOCAL_ICON	PBL_IF_ROUND_ELSE(GRect(100, 20, 20, 20),GRect(4, 9, 20, 20))
+#define DUAL_TIME	PBL_IF_ROUND_ELSE(GRect(33, 99, 95, 42),GRect(3, 130, 95, 42))
+#define DUAL_AMPM	PBL_IF_ROUND_ELSE(GRect(130, 104, 20, 20),GRect(100, 135, 20, 20))
+#define DUAL_TZ 	PBL_IF_ROUND_ELSE(GRect(130, 114, 41, 14),GRect(28, 102, 41, 14))
+#define DUAL_DATE 	PBL_IF_ROUND_ELSE(GRect(90, 125, 88, 16),GRect(11, 122, 98, 16))
+#define DUAL_DAY 	PBL_IF_ROUND_ELSE(GRect(0, 125, 75, 16),GRect(11, 112, 98, 16))
+#define DUAL_CITY 	PBL_IF_ROUND_ELSE(GRect(0, 90, 180, 17),GRect(28, 91, 100, 17))
+#define DUAL_TEMP 	PBL_IF_ROUND_ELSE(GRect(0, 130, 115, 45),GRect(50, 95, 90, 45))
+#define DUAL_ICON	PBL_IF_ROUND_ELSE(GRect(100, 152, 20, 20),GRect(4, 94, 20, 20))
+
+
 static void initialise_ui(void) {
   s_window = window_create();
-  window_set_background_color(s_window, GColorBlack);
-  window_set_fullscreen(s_window, true);
+
+
   
   s_res_gothic_14 = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   s_res_bitham_42_light = fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT);
   s_res_bitham_30_black = fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK);
     
   // LocalArea
-  LocalArea = text_layer_create(GRect(3, 9, 137, 75));
+  LocalArea = text_layer_create(LOCAL_AREA);
   text_layer_set_font(LocalArea, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalArea);
   
   // DualArea
-  DualArea = text_layer_create(GRect(4, 93, 137, 70));
+  DualArea = text_layer_create(DUAL_AREA);
   text_layer_set_font(DualArea, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualArea);
   
   // LocalTZ
-  LocalTZ = text_layer_create(GRect(28, 20, 41, 14));
+  LocalTZ = text_layer_create(LOCAL_TZ);
   text_layer_set_background_color(LocalTZ, GColorClear);
   text_layer_set_text(LocalTZ, LocalTZName);
   text_layer_set_font(LocalTZ, s_res_gothic_14);
@@ -127,7 +158,7 @@ static void initialise_ui(void) {
   //Here it was LocalTemp
   
   // LocalTime
-  LocalTime = text_layer_create(GRect(3, 49, 95, 42));
+  LocalTime = text_layer_create(LOCAL_TIME);
   text_layer_set_background_color(LocalTime, GColorClear);
   text_layer_set_text(LocalTime, localtime_text);
   text_layer_set_text_alignment(LocalTime, GTextAlignmentRight);
@@ -136,28 +167,29 @@ static void initialise_ui(void) {
 	
 	
   // LocalTime AM/PM Indicator
-  LocalAMPMInd = text_layer_create(GRect(100, 54, 20, 20));
+  LocalAMPMInd = text_layer_create(LOCAL_AMPM);
   text_layer_set_background_color(LocalAMPMInd, GColorClear);
   text_layer_set_text(LocalAMPMInd, strLocalAMPMInd);
   text_layer_set_text_alignment(LocalAMPMInd, GTextAlignmentLeft);
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalAMPMInd);
   
   // LocalDate
-  LocalDate = text_layer_create(GRect(11, 40, 98, 16));
+  LocalDate = text_layer_create(LOCAL_DATE);
   text_layer_set_background_color(LocalDate, GColorClear);
   text_layer_set_text(LocalDate, localmonth_text);
   text_layer_set_font(LocalDate, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalDate);
   
   // LocalDay
-  LocalDay = text_layer_create(GRect(11, 30, 98, 16));
+  LocalDay = text_layer_create(LOCAL_DAY);
   text_layer_set_background_color(LocalDay, GColorClear);
+  text_layer_set_text_alignment(LocalDay, PBL_IF_ROUND_ELSE(GTextAlignmentRight,GTextAlignmentLeft));
   text_layer_set_text(LocalDay, localweekday_text);
   text_layer_set_font(LocalDay, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalDay);
   
   // DualTime
-  DualTime = text_layer_create(GRect(3, 130, 95, 42));
+  DualTime = text_layer_create(DUAL_TIME);
   text_layer_set_background_color(DualTime, GColorClear);
   text_layer_set_text(DualTime, dualtime_text);
   text_layer_set_text_alignment(DualTime, GTextAlignmentRight);
@@ -165,7 +197,7 @@ static void initialise_ui(void) {
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualTime);
 	
   // DualTime AM/PM Indicator
-  DualAMPMInd = text_layer_create(GRect(100, 135, 20, 20));
+  DualAMPMInd = text_layer_create(DUAL_AMPM);
   text_layer_set_background_color(DualAMPMInd, GColorClear);
   text_layer_set_text(DualAMPMInd, strDualAMPMInd);
   text_layer_set_text_alignment(DualAMPMInd, GTextAlignmentLeft);
@@ -174,15 +206,16 @@ static void initialise_ui(void) {
 	
   
   // DualDate
-  DualDate = text_layer_create(GRect(11, 122, 98, 16));
+  DualDate = text_layer_create(DUAL_DATE);
   text_layer_set_background_color(DualDate, GColorClear);
   text_layer_set_text(DualDate, dualmonth_text);
   text_layer_set_font(DualDate, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualDate);
   
   // DualDay
-  DualDay = text_layer_create(GRect(11, 112, 98, 16));
+  DualDay = text_layer_create(DUAL_DAY);
   text_layer_set_background_color(DualDay, GColorClear);
+  text_layer_set_text_alignment(DualDay, PBL_IF_ROUND_ELSE(GTextAlignmentRight,GTextAlignmentLeft));
   text_layer_set_text(DualDay, dualweekday_text);
   text_layer_set_font(DualDay, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualDay);
@@ -190,35 +223,38 @@ static void initialise_ui(void) {
   //Here it was DualTemp
   
   // DualTZ
-  DualTZ = text_layer_create(GRect(28, 102, 41, 14));
+  DualTZ = text_layer_create(DUAL_TZ);
   text_layer_set_text(DualTZ, DualTZName);
+  text_layer_set_background_color(DualTZ, GColorClear);
   text_layer_set_font(DualTZ, s_res_gothic_14);
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualTZ);
   
   // Local_img
-  Local_img = bitmap_layer_create(GRect(4, 9, 20, 20));
+  Local_img = bitmap_layer_create(LOCAL_ICON);
   bitmap_layer_set_bitmap(Local_img, s_res_takeoff);
   layer_add_child(window_get_root_layer(s_window), (Layer *)Local_img);
 	
   // Dual_img
-  Dual_img = bitmap_layer_create(GRect(4, 94, 20, 20));
+  Dual_img = bitmap_layer_create(DUAL_ICON);
   bitmap_layer_set_bitmap(Dual_img, s_res_landing);
   layer_add_child(window_get_root_layer(s_window), (Layer *)Dual_img);
 	
   // s_textlayer_1
-  s_textlayer_1 = text_layer_create(GRect(28, 8, 111, 17));
+  s_textlayer_1 = text_layer_create(LOCAL_CITY);
   text_layer_set_background_color(s_textlayer_1, GColorClear);
   text_layer_set_text(s_textlayer_1, localname);
+  text_layer_set_text_alignment(s_textlayer_1, PBL_IF_ROUND_ELSE(GTextAlignmentCenter,GTextAlignmentLeft));
   layer_add_child(window_get_root_layer(s_window), (Layer *)s_textlayer_1);
   
   // s_textlayer_2
-  s_textlayer_2 = text_layer_create(GRect(28, 91, 100, 17));
+  s_textlayer_2 = text_layer_create(DUAL_CITY);
   text_layer_set_background_color(s_textlayer_2, GColorClear);
   text_layer_set_text(s_textlayer_2, dualname);
+  text_layer_set_text_alignment(s_textlayer_2, PBL_IF_ROUND_ELSE(GTextAlignmentCenter,GTextAlignmentLeft));
   layer_add_child(window_get_root_layer(s_window), (Layer *)s_textlayer_2);
 	
 	// LocalTemp
-  LocalTemp = text_layer_create(GRect(50, 13, 90, 45)); //(GRect(73, 15, 65, 42));
+  LocalTemp = text_layer_create(LOCAL_TEMP); //(GRect(73, 15, 65, 42));
   text_layer_set_background_color(LocalTemp, GColorClear);
   text_layer_set_text(LocalTemp, strLocalTemp);
   text_layer_set_text_alignment(LocalTemp, GTextAlignmentRight);
@@ -226,12 +262,53 @@ static void initialise_ui(void) {
   layer_add_child(window_get_root_layer(s_window), (Layer *)LocalTemp);
 	
 	// DualTemp 
-  DualTemp = text_layer_create(GRect(50, 95, 90, 45)); //(93,97,45,42) //GRect(73, 97, 65, 42))
+  DualTemp = text_layer_create(DUAL_TEMP); //(93,97,45,42) //GRect(73, 97, 65, 42))
   text_layer_set_background_color(DualTemp, GColorClear);
   text_layer_set_text(DualTemp, strDualTemp);
   text_layer_set_text_alignment(DualTemp, GTextAlignmentRight);
   text_layer_set_font(DualTemp, s_res_bitham_42_light);
   layer_add_child(window_get_root_layer(s_window), (Layer *)DualTemp);
+	
+	#ifdef PBL_COLOR
+		window_set_background_color(s_window, GColorBlack);
+		
+	//LOCAL AREA
+		text_layer_set_background_color(LocalArea, GColorOrange);
+	
+		text_layer_set_text_color(LocalTZ, GColorWhite);
+		text_layer_set_text_color(LocalTime, GColorWhite);
+		text_layer_set_text_color(LocalAMPMInd, GColorWhite);
+		text_layer_set_text_color(LocalDate, GColorWhite);
+		text_layer_set_text_color(LocalDay, GColorWhite);
+		text_layer_set_text_color(s_textlayer_1, GColorWhite);
+		text_layer_set_text_color(LocalTemp, GColorWhite);
+	
+		//bitmap_layer_set_compositing_mode(Local_img, GCompOpSet);
+		//bitmap_layer_set_compositing_mode(Dual_img, GCompOpSet);
+	//DUAL AREA
+		text_layer_set_background_color(DualArea, GColorRajah);
+	
+		text_layer_set_text_color(DualTZ, GColorBlack);
+		text_layer_set_text_color(DualTime, GColorBlack);
+		text_layer_set_text_color(DualAMPMInd, GColorBlack);
+		text_layer_set_text_color(DualDate, GColorBlack);
+		text_layer_set_text_color(DualDay, GColorBlack);
+		text_layer_set_text_color(s_textlayer_2, GColorBlack);
+		text_layer_set_text_color(DualTemp, GColorBlack);
+	
+		replace_gbitmap_color(GColorWhite, GColorBlack, s_res_landing, Dual_img);
+	#else
+		window_set_background_color(s_window, GColorBlack);
+		text_layer_set_background_color(LocalArea, GColorWhite);
+		text_layer_set_background_color(DualArea, GColorWhite);	
+	
+		//bitmap_layer_set_compositing_mode(Local_img, GCompOpAssign);
+		//bitmap_layer_set_compositing_mode(Dual_img, GCompOpAssign);
+	#endif
+	
+		//APLITE runs FW3.X now.
+		bitmap_layer_set_compositing_mode(Local_img, GCompOpSet);
+		bitmap_layer_set_compositing_mode(Dual_img, GCompOpSet);
 }
 
 static void destroy_ui(void) {
@@ -289,7 +366,7 @@ void getDualTime(){
 			
 			//Define and Calculate Time Zones
 			//TIME ZONE 1
-			struct tm *tzPtr = gmtime(&actualPtr);
+			struct tm *tzPtr = localtime(&actualPtr);
 		
 			tzPtr->tm_sec += timediff;
 			//Since mktime() is not realible in Pebble's firmware, use PUtils to built the dual time.
@@ -333,7 +410,7 @@ void getDate()
 {
 	//Get the date
 	time_t actualPtr = time(NULL);
-	struct tm *tz1Ptr = gmtime(&actualPtr);
+	struct tm *tz1Ptr = localtime(&actualPtr);
 	
 	//get the local date
 	char *sys_locale = setlocale(LC_ALL, "");
@@ -515,11 +592,19 @@ itoa10 (int value, char *result)
 			if (s_res_takeoff != NULL){gbitmap_destroy(s_res_takeoff);}
 			s_res_takeoff = gbitmap_create_with_resource(WEATHER_ICONS[persist_read_int(LOCAL_ICON_KEY)]);
 			bitmap_layer_set_bitmap(Local_img, s_res_takeoff);
+			#ifdef PBL_BW
+				//use Jonathan's library to change the icon's color (from white to black, for consistency)
+				replace_gbitmap_color(GColorWhite, GColorBlack, s_res_takeoff, Local_img);
+			#endif
 		}
 	  	if (persist_exists(DUAL_ICON_KEY)){
 			if (s_res_landing != NULL){gbitmap_destroy(s_res_landing);}
 			s_res_landing = gbitmap_create_with_resource(WEATHER_ICONS[persist_read_int(DUAL_ICON_KEY)]);
 			bitmap_layer_set_bitmap(Dual_img, s_res_landing);
+			//#ifdef PBL_COLOR
+				//use Jonathan's library to change the icon's color (from white to black, for consistency)
+				replace_gbitmap_color(GColorWhite, GColorBlack, s_res_landing, Dual_img);
+			//#endif
 		}
 	 
 

@@ -22,110 +22,115 @@
             {
                 "file": "images/wind_small.png",
                 "name": "ICON_WIND",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/ICON_THUNDER_SMALL.png",
                 "name": "ICON_THUNDER",
-                "type": "png"
-            },
-            {
-                "file": "images/ICON_SNOW_SLEET_SMALL.png",
-                "name": "ICON_SNOW_SLEET",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/ICON_SNOW_SMALL.png",
                 "name": "ICON_SNOW",
-                "type": "png"
-            },
-            {
-                "file": "images/ICON_SLEET_SMALL.png",
-                "name": "ICON_SLEET",
-                "type": "png"
-            },
-            {
-                "file": "images/ICON_RAIN_SNOW_SMALL.png",
-                "name": "ICON_RAIN_SNOW",
-                "type": "png"
-            },
-            {
-                "file": "images/ICON_RAIN_SMALL.png",
-                "name": "ICON_RAIN",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/ICON_RAIN_SLEET_SMALL.png",
                 "name": "ICON_RAIN_SLEET",
-                "type": "png"
+                "type": "bitmap"
+            },
+            {
+                "file": "images/ICON_SLEET_SMALL.png",
+                "name": "ICON_SLEET",
+                "type": "bitmap"
+            },
+            {
+                "file": "images/ICON_RAIN_SNOW_SMALL.png",
+                "name": "ICON_RAIN_SNOW",
+                "type": "bitmap"
+            },
+            {
+                "file": "images/ICON_RAIN_SMALL.png",
+                "name": "ICON_RAIN",
+                "type": "bitmap"
+            },
+            {
+                "file": "images/ICON_SNOW_SLEET_SMALL.png",
+                "name": "ICON_SNOW_SLEET",
+                "type": "bitmap"
             },
             {
                 "file": "images/ICON_PARTLY_CLOUDY_NIGHT_SMALL.png",
                 "name": "ICON_PARTLY_CLOUDY_NIGHT",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/ICON_PARTLY_CLOUDY_DAY.png",
                 "name": "ICON_PARTLY_CLOUDY_DAY",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/ICON_NOT_AVAILABLE_SMALL.png",
                 "name": "ICON_NA",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/ICON_HOT_SMALL.png",
                 "name": "ICON_HOT",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/ICON_FOG_SMALL.png",
                 "name": "ICON_FOG",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/ICON_DRIZZLE_SMALL.png",
                 "name": "ICON_DRIZZLE",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/ICON_COLD_SMALL.png",
                 "name": "ICON_COLD",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/ICON_CLOUDY_SMALL.png",
                 "name": "ICON_CLOUDY",
-                "type": "png"
-            },
-            {
-                "file": "images/clear-day_small.png",
-                "name": "ICON_CLEAR_DAY",
-                "type": "png"
+                "type": "bitmap"
             },
             {
                 "file": "images/clear-night_small.png",
                 "name": "ICON_CLEAR_NIGHT",
-                "type": "png"
+                "type": "bitmap"
             },
             {
-                "file": "images/landing.png",
-                "name": "Landing",
-                "type": "png"
+                "file": "images/clear-day_small.png",
+                "name": "ICON_CLEAR_DAY",
+                "type": "bitmap"
             },
             {
                 "file": "images/takeoff.png",
                 "name": "TakeOff",
-                "type": "png"
+                "targetPlatforms": null,
+                "type": "bitmap"
+            },
+            {
+                "file": "images/landing.png",
+                "name": "Landing",
+                "type": "bitmap"
             }
         ]
     },
-    "sdkVersion": "2",
+    "sdkVersion": "3",
     "shortName": "TripTime",
+    "targetPlatforms": [
+        "aplite",
+        "basalt",
+        "chalk"
+    ],
     "uuid": "588cbd29-7273-410f-9741-7e2073d4dba4",
-    "versionCode": 1,
-    "versionLabel": "1.1",
+    "versionLabel": "1.3",
     "watchapp": {
         "watchface": true
     }

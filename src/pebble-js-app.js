@@ -1,7 +1,7 @@
 //////////////////////////////////
 //DEFINE AND INITALIZE VARIABLES//
 //////////////////////////////////
-var apikey = "AIzaSyBjakdvAf_XY_MnC6UnurVlV-muBtD4b_I8";
+var apikey = "AIzaSyBjakdvAf_X_MnC6UnurVlV-muBtD4b_I8";
 var localtimezone;
 var localtzname;
 var dualtimezone;
@@ -89,8 +89,8 @@ var imageId = {
 var options = JSON.parse(localStorage.getItem('options'));
 //console.log('read options: ' + JSON.stringify(options));
 if (options === null) options = {	'use_gps' : "false",
-									"localpos" : "Madrid", //default to "Madrid"
-									"dualpos" : "delhi", //default to "Mountain View"
+									"localpos" : "madrid", //default to "Madrid"
+									"dualpos" : "mountain view", //default to "Mountain View"
 									"units" : "celsius",
 									"key" : "",
 									"weather" : "false"
@@ -143,6 +143,29 @@ function getTimeStamp(){
 
 
 //Try to optimizd the code//
+function getCityName(pos){
+	
+	var url = "http://maps.googleapis.com/maps/api/geocode/json?latlng=" + pos + "";
+	console.log("get location URL: " + url);
+	var response;
+	var req = new XMLHttpRequest();
+	req.open('GET', url, false);
+	req.send();
+
+		if (req.readyState == 4) {
+			if (req.status == 200) {
+				response = JSON.parse(req.responseText);
+				if (response) {
+					//var position = new Array({'lat' : response.results[0].geometry.location.lat,
+					//						'long' : response.results[0].geometry.location.lng});
+
+					var location = response.results[1].formatted_address;
+					console.log("city: " + location);
+					return location;
+					}
+				}
+			}
+}
 
 function getLocationName(pos){
 	
@@ -419,13 +442,22 @@ function getWeatherFromLatLong(latitude, longitude) {
       if (req.status == 200) {
         console.log(req.responseText);
         response = JSON.parse(req.responseText);
-        if (response) {
+        if (response.query.results !== null) {
 			woeid = response.query.results.Result.woeid;
 			
 			
 			temp = getWeatherFromWoeid(woeid);
 			return temp;
         }
+		  else{
+			  	console.log('Yahoo! geo.placefinder is not retriving a shit...');
+			 	//if geo.placefinder is not working, try to get location from google and get the WOEID by city name.
+				  var location = getCityName(latitude + ','+ longitude);
+				  console.log("location name: " + location);
+			  	  temp = getWeatherFromLocation(location);
+			      console.log("bypassed temp: " + temp);
+			  	  return temp;
+		  }
       } else {
         console.log("unable to get woeid from Yahoo! API");
 		  return "999";
@@ -435,6 +467,40 @@ function getWeatherFromLatLong(latitude, longitude) {
 
 }
 
+function getWeatherFromLocation(location_name) {
+	
+//check the weather provider to define how to proceed
+
+	//Yahoo! Weather	
+
+		  console.log("Getting weather from Yahoo Weather");
+		  var response;
+		  var woeid = -1;
+		  var query = encodeURI("select woeid, name from geo.places(1) where text=\"" + location_name + "\"");
+		  var url = "http://query.yahooapis.com/v1/public/yql?q=" + query + "&format=json";
+		  var req = new XMLHttpRequest();
+		  var temperature;
+	
+		  req.open('GET', url, false);
+		  req.send();
+			if (req.readyState == 4) {
+			  if (req.status == 200) {
+				console.log(req.responseText);
+				response = JSON.parse(req.responseText);
+				if (response) {
+					woeid = response.query.results.place.woeid;
+
+					console.log("Call GetWeatherFromWoeid: woeid=" + woeid);
+					temperature = getWeatherFromWoeid(woeid);
+					console.log("temperature from Location: " + temperature);
+					return temperature;
+				}
+			  } else {
+				console.log("unable to get woeid from Yahoo! API");
+			  }
+			}	
+
+}
 //Retrieves the Weather data from Yahoo! Weather//
 function getWeatherFromWoeid(woeid) {
 	
@@ -506,7 +572,34 @@ function updateWeather(){
 	}
 }
 
+function CheckUserKey()
+{
+	var lt = 0;
+	var key = options['key'];
+	var token = Pebble.getAccountToken();
+	var decrypt;
+	
+	//if there is not user key, then license is 0
+	if ((key==undefined)||(key==null)||(key=="")||(key=="undefined")){key="00000000000"}
+	//check the user key
 
+	//extract the key from the Account token
+	decrypt = token.substring(10,11) + token.substring(2,3) + token.substring(7,8) + token.substring(14,15) + token.substring(0,1);
+	decrypt = decrypt + key.substring(5,6);
+	decrypt = decrypt + token.substring(1,2) + token.substring(8,9) + token.substring(5,6) + token.substring(3,4) + token.substring(6,7)
+
+	if (decrypt == key) {lt = key.substring(5,6);}
+	else {lt = 0;
+		 }
+	
+	//confirm that the javascript code works fine
+	//options['key']=decrypt;
+
+	
+	console.log("Key: " + key + " Decrypt: " + decrypt + " LT: " + lt);
+	
+	return lt;
+}
 
 ///////////////////////////////////////
 //Setup the connection with the watch//
