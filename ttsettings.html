@@ -1,0 +1,167 @@
+
+<html>
+    <head>
+        <meta charset='utf-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1'>
+        <link rel='stylesheet' href='http://code.jquery.com/mobile/1.4.2/jquery.mobile-1.4.2.min.css' />
+        <script src='http://code.jquery.com/jquery-1.9.1.min.js'></script>
+        <script src='http://code.jquery.com/mobile/1.4.2/jquery.mobile-1.4.2.min.js'></script>
+        <style>
+            .ui-header .ui-title { margin-left: 1em; margin-right: 1em; text-overflow: clip; }
+            /*.ui-radio { width: 50%; }*/
+        </style>
+
+    </head>
+    <body>
+        <div data-role='page' id='main'>
+            <div data-role='header' class='jqm-header' data-theme='b'><h1>TripTime settings</h1>
+                    </div>
+                <div data-role='content'>
+
+                    <div data-role="fieldcontain">
+                        <label for="gps_switch"><b>Use GPS:</b> Uses your GPS to automatically determine your local position.</label>
+                        <select name="gps_switch" id="gps_switch" data-theme="c" data-role="slider" data-track-theme="d">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                    
+                    <div data-role="fieldcontain">
+                        <label for="localpos"><b>Local Position:</b> Manually define your local position.</label>
+                        <input type="text" name="localpos" id="localpos" value="" />
+                    </div>
+                    
+                    <div data-role="fieldcontain">
+                        <label for="dualpos"><b>Dual Position:</b> Define your remote position.</label>
+                        <input type="text" name="dualpos" id="dualpos" value="" />
+                    </div>
+                    
+                    <div data-role="fieldcontain">
+                        <fieldset data-role="controlgroup" data-type="horizontal">
+                            <legend>Units:</legend>
+                            <label for="celsius">Metric</label>
+                            <input type="radio" id="celsius" name="units" value="celsius" data-theme="c">
+                            <label for="fahrenheit">Imperial</label>
+                            <input type="radio" id="fahrenheit" name="units" value="fahrenheit" data-theme="c">
+                        </fieldset>
+                    </div>
+                    
+
+
+                    <h1>EXTRA FEATURES (For backers only)</h1>
+                    <div data-role="content">
+                        <label for="lt"></label>
+                        <input type="text" name="lt" id="lt" value="" />
+                    </div>
+                    <h3>If you support with 1€ or more, you unlock:</h3>
+                    <div data-role="fieldcontain">
+                        <label for="weather"><b>Displays Weather:</b> Displays the current weather conditions and temperature for both local and dual zones.</label>
+                        <select name="weather" id="weather" data-theme="c" data-role="slider" data-track-theme="d">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                    
+                     <div class='ui-body ui-body-b'>
+                        <fieldset class='ui-grid-a'>
+                            <button class="btn btn-warning" type="submit" id="b-support">Support</button>
+                            <div class='ui-block-a'><button type='submit' data-theme='d' id='b-cancel'>Cancel</button></div>
+                            <div class='ui-block-b'><button type='submit' data-theme='b' id='b-submit'>Submit</button></div>
+                        </fieldset>
+                    </div>
+
+                </div>
+            </div>
+            <script>
+                /*
+                $("#units").change(function() {
+                    fillWindSpeed(getQueryVariable("#units"));
+                });
+                function fillWindSpeed(units){
+                    //first remove all the existing values (if any)
+                     $('#wspeed').empty();
+                    //Dynamically set the mi/h or km/h
+                    if(units=="c"){$('#wspeed').append(new Option('km/h', '0'));}
+                    else{   $('#wspeed').append(new Option('mi/h', '0'));}
+                    //Finally set the static values
+                    $('#wspeed').append(new Option('m/s', '1'));
+                    $('#wspeed').append(new Option('knots', '2'));
+                    $('#wspeed').append(new Option('beaufort', '3'));
+                }
+                */
+                
+                function getQueryVariable(variable) {
+                    var query = location.search.substring(1);
+                    var vars = query.split('&');
+                    for (var i = 0; i < vars.length; i++) {
+                        var pair = vars[i].split('=');
+                        if (pair[0] == variable)
+                            return decodeURIComponent(pair[1]);
+                    }
+                    return false;
+                }
+                function saveOptions() {
+                    var options = {
+
+                        'use_gps': $('#gps_switch').val(),
+                        'localpos': $('#localpos').val(),
+                        'dualpos': $('#dualpos').val(),
+                        'units': $('input:radio[name=units]:checked').val(),
+                        'UUID': $('#UUID').val(),
+                        'lt': $('#lt').val(),
+                        'key': $('#key').val(),
+                        'weather': $('#weather').val(),
+                        'version' : "1.4"
+                    }
+                    return options;
+                }
+                $().ready(function() {
+                    
+                    
+        
+                    
+                    //Fill the Wind Speed options
+                     //fillWindSpeed(getQueryVariable("#units"));
+                    //Disable the UUID. this is merely informational
+                    //$('#UUID').prop('disabled', true);
+                    $('#lt').prop('disabled', true);
+                    $("#lt").hide();
+                  
+                    $('#b-cancel').click(function() {
+                        document.location = 'pebblejs://close#';
+                    });
+                    $('#b-submit').click(function() {
+                        document.location = 'pebblejs://close#' + encodeURIComponent(JSON.stringify(saveOptions()));
+                    });
+                    $('#b-support').click(function() {
+                        var body = '***** %0D%0A Please, explain as accurate as you could what your problem is  %0D%0A*****%0D%0A %0D%0A %0D%0A ***** %0D%0A  DO NOT REMOVE THIS  %0D%0A *****%0D%0A';
+                        var settings = encodeURIComponent(JSON.stringify(saveOptions()));
+                        var to = 'pebbleweather@gmail.com';
+                        var subject = 'Support Required - TripTime Settings';
+                        document.location.href = "mailto:"+to+"?subject="+subject+"&body="+body + settings;
+                    });
+
+                    $('#gps_switch').val(getQueryVariable('use_gps')).change();
+                    $('#localpos').val(getQueryVariable('localpos'));
+                    $('#dualpos').val(getQueryVariable('dualpos'));
+                    if (getQueryVariable('units') == "celsius") {
+                        $('input:radio[name=units][value=celsius]').prop('checked', true).trigger("click");
+                    } else {
+                        $('input:radio[name=units][value=fahrenheit]').prop('checked', true).trigger("click");
+                    }
+                   
+                    $('#UUID').val(getQueryVariable('UUID'));
+                    $('#lt').val(getQueryVariable('lt'));
+                    $('#key').val(getQueryVariable('key'));
+                    $('#weather').val(getQueryVariable('weather')).change();
+                    $('#os0').val(getQueryVariable('UUID'));
+                    // Disable location field based on GPS toggle
+                    $('#localpos').prop('disabled', $('#gps_switch').val() == "true");
+                    $('#gps_switch').change(function() {
+                        $('#localpos').prop('disabled', $('#gps_switch').val() == "true");
+                    });
+                });
+            </script>
+            </body>
+        </html>
+
